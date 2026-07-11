@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { TxLINEFixture } from "@/lib/types";
-import { fetchFixtures } from "@/lib/txline/client";
 
 const REACTIONS = [
   { id: "fire", emoji: "🔥", label: "Fire" },
@@ -36,8 +35,8 @@ export default function PulseRoom() {
   const [bursts, setBursts] = useState<ReactionBurst[]>([]);
 
   useEffect(() => {
-    fetchFixtures().then((list) => {
-      const f = list.find((x) => x.id === fixtureId);
+    fetch("/api/matches").then((r) => r.ok ? r.json() : []).then((list) => {
+      const f = list.find((x: TxLINEFixture) => x.id === fixtureId);
       if (f) setFixture(f);
     }).catch(() => {});
   }, [fixtureId]);

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { TxLINEFixture } from "@/lib/types";
-import { fetchFixtures } from "@/lib/txline/client";
 
 const REACTIONS = [
   { id: "fire", emoji: "🔥", label: "Fire" },
@@ -80,8 +79,8 @@ export default function ReplayRoom() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    fetchFixtures().then((list) => {
-      const f = list.find((x) => x.id === fixtureId);
+    fetch("/api/matches").then((r) => r.ok ? r.json() : []).then((list) => {
+      const f = list.find((x: TxLINEFixture) => x.id === fixtureId);
       if (f) setFixture(f);
     }).catch(() => {});
   }, [fixtureId]);

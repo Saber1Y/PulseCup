@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { TxLINEFixture } from "@/lib/types";
-import { fetchFixtures } from "@/lib/txline/client";
 
 function getMatchStatus(f: TxLINEFixture): "live" | "upcoming" | "finished" {
   const elapsed = Date.now() - new Date(f.startDate).getTime();
@@ -19,7 +18,7 @@ export default function Home() {
   const [matchIndex, setMatchIndex] = useState(0);
 
   useEffect(() => {
-    fetchFixtures().then(setFixtures).catch(() => {});
+    fetch("/api/matches").then((r) => r.ok ? r.json() : []).then(setFixtures).catch(() => {});
   }, []);
 
   const live = fixtures.filter((f) => getMatchStatus(f) === "live");
