@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import { Sora } from "next/font/google";
 import "./globals.css";
-import dynamic from "next/dynamic";
+import LandingNav from "@/components/LandingNav";
 
 const sora = Sora({ subsets: ["latin"], display: "swap" });
-
-const LandingNav = dynamic(() => import("@/components/LandingNav"), { ssr: false });
 
 export const metadata: Metadata = {
   title: "PulseCup — Feel Every Match Moment",
