@@ -1,21 +1,24 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Sora } from "next/font/google";
 import "./globals.css";
-import BottomNav from "@/components/BottomNav";
+import dynamic from "next/dynamic";
 
-const inter = Inter({ subsets: ["latin"] });
+const sora = Sora({ subsets: ["latin"], display: "swap" });
+
+const LandingNav = dynamic(() => import("@/components/LandingNav"), { ssr: false });
 
 export const metadata: Metadata = {
-  title: "PulseCup — Live Fan Reactions for World Cup",
-  description: "React to live match moments, play streak challenges, and share your fan pulse.",
+  title: "PulseCup — Feel Every Match Moment",
+  description:
+    "PulseCup turns World Cup match data into live fan reactions, streak challenges, and shareable recap cards.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-screen bg-pitch text-white antialiased`}>
-        <main className="mx-auto max-w-lg px-4 pb-20">{children}</main>
-        <BottomNav />
+      <body className={`${sora.className} min-h-screen bg-bg-deep text-text-primary antialiased`}>
+        <LandingNav />
+        {children}
       </body>
     </html>
   );
