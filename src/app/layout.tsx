@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import BottomNav from "@/components/BottomNav";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -13,7 +14,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={`${inter.className} min-h-screen bg-pitch text-white antialiased`}>
-        <main className="mx-auto max-w-lg px-4">{children}</main>
+        <main className="mx-auto max-w-lg px-4 pb-20">{children}</main>
+        <BottomNav />
       </body>
     </html>
   );
