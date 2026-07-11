@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
-import { fetchFixtures } from "@/lib/txline/client";
+import WC26_FIXTURES from "@/lib/wc26-fixtures";
 
 export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    const fixtures = await fetchFixtures();
-    return NextResponse.json(fixtures);
+    return NextResponse.json(WC26_FIXTURES);
   } catch (err) {
     console.error("GET /api/matches error:", err);
-    return NextResponse.json({ error: "Failed to fetch fixtures" }, { status: 502 });
+    return NextResponse.json({ error: "Failed to load fixtures" }, { status: 500 });
   }
 }
