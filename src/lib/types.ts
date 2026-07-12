@@ -1,3 +1,4 @@
+/* ─── TxLINE raw types ─── */
 export interface TxLINEFixtureRaw {
   FixtureId: number;
   CompetitionId: number;
@@ -14,7 +15,7 @@ export interface TxLINEFixture {
   homeTeam: string;
   awayTeam: string;
   startDate: string;
-  status: string;
+  status: "live" | "upcoming" | "finished";
 }
 
 export interface TxLINERawEvent {
@@ -29,46 +30,121 @@ export interface TxLINERawEvent {
   Clock?: { Seconds?: number };
 }
 
-export interface TxLINEScoreSnapshot {
-  fixture_id: number;
-  seq: number;
-  status: string;
-  home_score: number;
-  away_score: number;
-  period: string;
-}
+/* ─── Normalized PulseCup event ─── */
+export type PulseEventType =
+  | "MATCH_STARTED"
+  | "GOAL"
+  | "YELLOW_CARD"
+  | "RED_CARD"
+  | "CORNER"
+  | "SUBSTITUTION"
+  | "SCORE_UPDATE"
+  | "MATCH_ENDED";
 
-export interface PulseMatchEvent {
+export interface PulseCupEvent {
   id: string;
   fixtureId: number;
-  type: "GOAL" | "CARD" | "CORNER" | "SCORE_UPDATE" | "PHASE_CHANGE";
+  type: PulseEventType;
   minute: number;
   team?: "HOME" | "AWAY";
   homeScore: number;
   awayScore: number;
-  label: string;
-  timestamp: string;
+  txlineSequence: number;
+  raw: unknown;
+  createdAt: string;
 }
 
+/* ─── Reaction ─── */
+export type ReactionId = "called-it" | "shocked" | "over" | "calm";
+
+export interface ReactionOption {
+  id: ReactionId;
+  emoji: string;
+  label: string;
+}
+
+export interface UserReaction {
+  id: string;
+  fixtureId: number;
+  profileId: string;
+  reactionId: ReactionId;
+  eventId: string;
+  createdAt: string;
+}
+
+/* ─── Challenge ─── */
 export type ChallengeType =
   | "NEXT_GOAL"
-  | "NEXT_EVENT"
-  | "TOTAL_GOALS"
-  | "NEXT_CORNER";
+  | "TOTAL_GOALS_REACH_3"
+  | "NEXT_MAJOR_EVENT";
+
+export type ChallengeStatus = "OPEN" | "LOCKED" | "CORRECT" | "WRONG";
 
 export interface Challenge {
   id: string;
   fixtureId: number;
-  prompt: string;
   type: ChallengeType;
+  prompt: string;
   options: string[];
-  status: "OPEN" | "LOCKED" | "RESOLVED";
-  correctOption?: string;
+  status: ChallengeStatus;
+  correctOptionIndex: number | null;
+  triggerEventId: string | null;
+  createdByEventId: string;
+  createdAt: string;
+  resolvedAt: string | null;
 }
 
-export type ReactionEmoji = "fire" | "shock" | "skull" | "ice";
+export interface ChallengeEntry {
+  id: string;
+  profileId: string;
+  challengeId: string;
+  selectedOption: number;
+  createdAt: string;
+}
 
-export interface ReactionOption {
-  emoji: ReactionEmoji;
-  label: string;
+/* ─── Streak ─── */
+export interface UserStreak {
+  profileId: string;
+  fixtureId: number;
+  current: number;
+  best: number;
+  correctCount: number;
+  totalAnswered: number;
+  fastestReactionMs: number | null;
+  mood: string;
+}
+
+/* ─── Recap ─── */
+export interface RecapCard {
+  id: string;
+  profileId: string;
+  fixtureId: number;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number;
+  awayScore: number;
+  bestStreak: number;
+  correctCalls: string;
+  fastestReaction: string;
+  mood: string;
+  totalReactions: number;
+  createdAt: string;
+}
+
+/* ─── Moment engine types ─── */
+export interface ReactionPrompt {
+  title: string;
+  body: string;
+  options: ReactionOption[];
+}
+
+export interface ChallengePrompt {
+  type: ChallengeType;
+  prompt: string;
+  options: string[];
+}
+
+export interface GeneratedMoment {
+  reactionPrompt: ReactionPrompt | null;
+  challenge: ChallengePrompt | null;
 }
