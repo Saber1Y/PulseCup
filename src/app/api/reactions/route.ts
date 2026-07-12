@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "profileId, fixtureId, eventId, reactionId required" }, { status: 400 });
     }
 
-    const { data, error } = await supabaseAdmin
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
       .from("reactions")
       .insert({
         profile_id: profileId,
@@ -43,7 +44,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "fixtureId required" }, { status: 400 });
   }
 
-  const { data, error } = await supabaseAdmin
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
     .from("reactions")
     .select("*")
     .eq("fixture_id", Number(fixtureId))
