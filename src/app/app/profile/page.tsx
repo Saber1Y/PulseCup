@@ -1,8 +1,25 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { getGuestProfileId } from "@/lib/guest";
+import type { RecapCard } from "@/lib/types";
 
 export default function ProfilePage() {
+  const [recaps, setRecaps] = useState<RecapCard[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const pid = getGuestProfileId();
+    fetch(`/api/recaps?profileId=${pid}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        if (Array.isArray(data)) setRecaps(data);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="flex flex-col gap-4 px-4 pt-6">
       <div className="flex items-center gap-4">
@@ -12,31 +29,62 @@ export default function ProfilePage() {
         <div>
           <h1 className="text-lg font-bold">Guest Fan</h1>
           <p className="text-xs text-text-secondary">
-            No matches watched yet.
+            {recaps.length > 0
+              ? `${recaps.length} recap${recaps.length > 1 ? "s" : ""}`
+              : "No matches watched yet."}
           </p>
         </div>
       </div>
 
-      <div className="glass-elevated px-4 py-8 text-center">
-        <span className="text-3xl">📊</span>
-        <p className="mt-3 text-sm text-text-secondary">No stats yet</p>
-        <p className="mt-1 text-xs text-text-secondary/50">
-          Stats appear after you watch a match and answer challenges.
-        </p>
-        <Link
-          href="/app/matches"
-          className="mt-4 inline-block rounded-lg bg-coral px-5 py-2.5 text-xs font-semibold text-white"
-        >
-          Find a Match
-        </Link>
-      </div>
+      {loading ? (
+        <div className="glass-elevated px-4 py-8 text-center">
+          <p className="text-sm text-text-secondary/50">Loading...</p>
+        </div>
+      ) : recaps.length > 0 ? (
+        <div className="flex flex-col gap-3">
+          <span className="text-[11px] font-medium text-text-secondary">Recap Cards</span>
+          {recaps.map((r) => (
+            <Link
+              key={r.id}
+              href={`/app/share/${r.id}`}
+              className="glass-elevated flex items-center justify-between px-4 py-3 transition-all hover:border-coral/20"
+            >
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-text-primary">
+                  {r.homeTeam} {r.homeScore} - {r.awayScore} {r.awayTeam}
+                </span>
+                <span className="text-[10px] text-text-secondary/50">
+                  {r.mood} · {r.correctCalls} correct · Best streak {r.bestStreak}
+                </span>
+              </div>
+              <span className="text-xs text-coral">View →</span>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="glass-elevated px-4 py-8 text-center">
+            <span className="text-3xl">📊</span>
+            <p className="mt-3 text-sm text-text-secondary">No stats yet</p>
+            <p className="mt-1 text-xs text-text-secondary/50">
+              Stats appear after you watch a match and answer challenges.
+            </p>
+            <Link
+              href="/app/matches"
+              className="mt-4 inline-block rounded-lg bg-coral px-5 py-2.5 text-xs font-semibold text-white"
+            >
+              Find a Match
+            </Link>
+          </div>
 
-      <div className="glass-elevated px-4 py-4">
-        <span className="text-[11px] font-medium text-text-secondary">Recap Cards</span>
-        <p className="mt-2 text-xs text-text-secondary/50">
-          Recap cards are generated after watching a match.
-        </p>
-      </div>
+          <div className="glass-elevated px-4 py-4">
+            <span className="text-[11px] font-medium text-text-secondary">Recap Cards</span>
+            <p className="mt-2 text-xs text-text-secondary/50">
+              Recap cards are generated after watching a match.
+            </p>
+          </div>
+        </>
+      )}
 
       <div className="mb-8 rounded-xl border border-border bg-surface/50 px-4 py-4 text-center">
         <p className="text-xs text-text-secondary">

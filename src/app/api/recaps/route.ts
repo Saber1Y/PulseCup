@@ -3,17 +3,34 @@ import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/recaps?profileId=
+// GET /api/recaps?profileId=&fixtureId=&cardId=
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const profileId = url.searchParams.get("profileId");
   const fixtureId = url.searchParams.get("fixtureId");
+  const cardId = url.searchParams.get("cardId");
+
+  const supabase = getSupabaseAdmin();
+
+  // Single card lookup
+  if (cardId) {
+    const { data, error } = await supabase
+      .from("recap_cards")
+      .select("*")
+      .eq("id", cardId)
+      .maybeSingle();
+
+    if (error) {
+      return NextResponse.json({ error: "Failed to fetch recap" }, { status: 500 });
+    }
+
+    return NextResponse.json(data ? [data] : []);
+  }
 
   if (!profileId) {
     return NextResponse.json({ error: "profileId required" }, { status: 400 });
   }
 
-  const supabase = getSupabaseAdmin();
   let query = supabase
     .from("recap_cards")
     .select("*")
