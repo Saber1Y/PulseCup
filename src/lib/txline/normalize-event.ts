@@ -1,6 +1,22 @@
 import type { TxLINERawEvent, PulseCupEvent, PulseEventType } from "../types";
 
-const GAME_STATE_MAP: Record<string, PulseEventType> = {
+const ACTION_MAP: Record<string, PulseEventType> = {
+  goal: "GOAL",
+  yellow_card: "YELLOW_CARD",
+  unreliable_yellow_cards: "YELLOW_CARD",
+  red_card: "RED_CARD",
+  corner: "CORNER",
+  game_finalised: "MATCH_ENDED",
+  shot: "SHOT",
+  free_kick: "FREE_KICK",
+  attack_possession: "POSSESSION",
+  danger_possession: "POSSESSION",
+  high_danger_possession: "POSSESSION",
+  safe_possession: "POSSESSION",
+  possession: "POSSESSION",
+};
+
+const GAME_STATE_FALLBACK: Record<string, PulseEventType> = {
   "Kick off": "MATCH_STARTED",
   "Goal": "GOAL",
   "Yellow Card": "YELLOW_CARD",
@@ -10,7 +26,7 @@ const GAME_STATE_MAP: Record<string, PulseEventType> = {
   "Full Time": "MATCH_ENDED",
 };
 
-const STATUS_ID_MAP: Record<number, PulseEventType> = {
+const STATUS_ID_FALLBACK: Record<number, PulseEventType> = {
   1: "MATCH_STARTED",
   5: "MATCH_ENDED",
   7: "MATCH_ENDED",
@@ -25,11 +41,18 @@ function nextId(): string {
 }
 
 function determineTeam(raw: TxLINERawEvent): "HOME" | "AWAY" | undefined {
+  const participant = raw.Participant;
+  if (participant) {
+    const lower = participant.toLowerCase();
+    if (lower.includes("home") || lower === "1") return "HOME";
+    if (lower.includes("away") || lower === "2") return "AWAY";
+  }
   const state = raw.GameState;
-  if (!state) return undefined;
-  const lower = state.toLowerCase();
-  if (lower.includes("home") || lower.includes("participant1")) return "HOME";
-  if (lower.includes("away") || lower.includes("participant2")) return "AWAY";
+  if (state) {
+    const lower = state.toLowerCase();
+    if (lower.includes("home") || lower.includes("participant1")) return "HOME";
+    if (lower.includes("away") || lower.includes("participant2")) return "AWAY";
+  }
   return undefined;
 }
 
@@ -39,14 +62,19 @@ export function normalizeTxLINE(raw: TxLINERawEvent): PulseCupEvent | null {
 
   if (!fixtureId || seq == null) return null;
 
-  const eventType =
-    GAME_STATE_MAP[raw.GameState ?? ""] ??
-    STATUS_ID_MAP[raw.StatusId ?? -1] ??
-    "SCORE_UPDATE";
+  const action = String(raw.Action ?? raw.Data?.Action ?? "").trim().toLowerCase();
+  const gameState = raw.GameState ?? "";
 
+  const eventType =
+    ACTION_MAP[action] ??
+    GAME_STATE_FALLBACK[gameState] ??
+    STATUS_ID_FALLBACK[raw.StatusId ?? -1] ??
+    "OTHER";
+
+  const stats = raw.Stats;
   const score = raw.Score;
-  const homeScore = score?.Participant1?.Total?.Goals ?? 0;
-  const awayScore = score?.Participant2?.Total?.Goals ?? 0;
+  const homeScore = stats?.["1"] ?? score?.Participant1?.Total?.Goals ?? 0;
+  const awayScore = stats?.["2"] ?? score?.Participant2?.Total?.Goals ?? 0;
   const seconds = raw.Clock?.Seconds ?? 0;
   const minute = Math.floor(seconds / 60);
 
@@ -59,6 +87,7 @@ export function normalizeTxLINE(raw: TxLINERawEvent): PulseCupEvent | null {
     homeScore,
     awayScore,
     txlineSequence: seq,
+    action,
     raw,
     createdAt: new Date().toISOString(),
   };

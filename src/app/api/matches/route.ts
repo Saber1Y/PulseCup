@@ -31,15 +31,17 @@ export async function GET() {
       return NextResponse.json([]);
     }
 
-    const fixtures = raw.map((f: Record<string, unknown>) => ({
-      id: f.FixtureId ?? 0,
-      competitionId: f.CompetitionId ?? 0,
-      competition: f.Competition ?? "World Cup",
-      homeTeam: f.Participant1 ?? "Home",
-      awayTeam: f.Participant2 ?? "Away",
-      startDate: new Date((f.StartTime as number) || Date.now()).toISOString(),
-      status: (f.StartTime as number) > Date.now() ? "upcoming" : "finished",
-    }));
+    const fixtures = raw
+      .filter((f: Record<string, unknown>) => f.CompetitionId === 72)
+      .map((f: Record<string, unknown>) => ({
+        id: f.FixtureId ?? 0,
+        competitionId: f.CompetitionId ?? 0,
+        competition: f.Competition ?? "World Cup",
+        homeTeam: f.Participant1 ?? "Home",
+        awayTeam: f.Participant2 ?? "Away",
+        startDate: new Date((f.StartTime as number) || Date.now()).toISOString(),
+        status: (f.StartTime as number) > Date.now() ? "upcoming" : "finished",
+      }));
 
     return NextResponse.json(fixtures);
   } catch (err) {

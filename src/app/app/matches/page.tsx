@@ -88,7 +88,12 @@ function MatchHub() {
   useEffect(() => {
     fetch("/api/matches")
       .then((r) => (r.ok ? r.json() : []))
-      .then(setFixtures)
+      .then((list: TxLINEFixture[]) => {
+        const sorted = [...list].sort(
+          (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+        );
+        setFixtures(sorted);
+      })
       .catch(() => {});
   }, []);
 

@@ -23,6 +23,11 @@ export interface TxLINERawEvent {
   Seq: number;
   StatusId?: number;
   GameState?: string;
+  Action?: string;
+  Data?: { Action?: string };
+  Participant?: string;
+  Stats?: Record<string, number>;
+  Ts?: number;
   Score?: {
     Participant1?: { Total?: { Goals?: number } };
     Participant2?: { Total?: { Goals?: number } };
@@ -39,7 +44,11 @@ export type PulseEventType =
   | "CORNER"
   | "SUBSTITUTION"
   | "SCORE_UPDATE"
-  | "MATCH_ENDED";
+  | "MATCH_ENDED"
+  | "SHOT"
+  | "FREE_KICK"
+  | "POSSESSION"
+  | "OTHER";
 
 export interface PulseCupEvent {
   id: string;
@@ -50,6 +59,7 @@ export interface PulseCupEvent {
   homeScore: number;
   awayScore: number;
   txlineSequence: number;
+  action: string;
   raw: unknown;
   createdAt: string;
 }

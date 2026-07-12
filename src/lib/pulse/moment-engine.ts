@@ -26,6 +26,18 @@ const EVENT_OPTIONS_MAP: Partial<Record<string, ReactionOption[]>> = {
     { id: "called-it", emoji: "🔥", label: "Dangerous" },
     { id: "calm", emoji: "🧊", label: "Nothing yet" },
   ],
+  SHOT: [
+    { id: "called-it", emoji: "🔥", label: "Close!" },
+    { id: "calm", emoji: "🧊", label: "Not worried" },
+  ],
+  FREE_KICK: [
+    { id: "called-it", emoji: "🔥", label: "Dangerous" },
+    { id: "calm", emoji: "🧊", label: "Nothing yet" },
+  ],
+  POSSESSION: [
+    { id: "calm", emoji: "🧊", label: "Still calm" },
+    { id: "over", emoji: "💀", label: "Boring" },
+  ],
 };
 
 const CHALLENGE_RULES: Array<{
@@ -59,32 +71,35 @@ const CHALLENGE_RULES: Array<{
   },
 ];
 
+const EVENT_TITLES: Record<string, string> = {
+  GOAL: "Goal!",
+  YELLOW_CARD: "Card shown",
+  RED_CARD: "Red card!",
+  CORNER: "Corner kick",
+  SHOT: "Shot!",
+  FREE_KICK: "Free kick",
+  POSSESSION: "Possession",
+  MATCH_ENDED: "Full time",
+};
+
+const EVENT_BODIES: Record<string, string> = {
+  GOAL: "How are you reacting to that finish?",
+  YELLOW_CARD: "What's your read on the match now?",
+  RED_CARD: "Huge moment. Your reaction?",
+  CORNER: "Big chance brewing. Your take?",
+  SHOT: "Close to a goal. How are you feeling?",
+  FREE_KICK: "Dangerous set piece. Your call?",
+  POSSESSION: "Match settling down. Your vibe?",
+};
+
 export function createMomentFromEvent(
   event: PulseCupEvent,
 ): GeneratedMoment {
   const reactionOptions = EVENT_OPTIONS_MAP[event.type] ?? REACTION_OPTIONS;
 
   const reactionPrompt = {
-    title:
-      event.type === "GOAL"
-        ? "Goal!"
-        : event.type === "YELLOW_CARD"
-          ? "Card shown"
-          : event.type === "RED_CARD"
-            ? "Red card!"
-            : event.type === "CORNER"
-              ? "Corner kick"
-              : "Match update",
-    body:
-      event.type === "GOAL"
-        ? "How are you reacting to that finish?"
-        : event.type === "YELLOW_CARD"
-          ? "What's your read on the match now?"
-          : event.type === "RED_CARD"
-            ? "Huge moment. Your reaction?"
-            : event.type === "CORNER"
-              ? "Big chance brewing. Your take?"
-              : "React to the latest moment.",
+    title: EVENT_TITLES[event.type] ?? "Match update",
+    body: EVENT_BODIES[event.type] ?? "React to the latest moment.",
     options: reactionOptions,
   };
 
