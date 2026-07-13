@@ -3,70 +3,68 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-
-interface ReplayEvent {
-  Seq: number;
-  StatusId?: number;
-  GameState?: string;
-  Score?: { Participant1?: { Total?: { Goals?: number } }; Participant2?: { Total?: { Goals?: number } } };
-  Clock?: { Seconds?: number };
-}
-
-interface ParsedReplayEvent {
-  minute: number;
-  label: string;
-  homeScore: number;
-  awayScore: number;
-}
-
-function parseReplayEvents(raw: unknown): ParsedReplayEvent[] {
-  if (!Array.isArray(raw) || raw.length === 0) return [];
-
-  const sorted = [...raw].sort((a: any, b: any) => (a.Seq || 0) - (b.Seq || 0));
-
-  const labels: Record<string, string> = {
-    "Kick off": "Kick off",
-    "Goal": "⚽ Goal",
-    "Yellow Card": "🟨 Yellow Card",
-    "Red Card": "🟥 Red Card",
-    "Corner": "⏩ Corner",
-    "Substitution": "🔄 Substitution",
-    "Half Time": "⏸️ Half Time",
-    "Full Time": "⏱️ Full Time",
-  };
-
-  return sorted.map((e: any) => {
-    const score = e.Score;
-    const home = Number(score?.Participant1?.Total?.Goals ?? 0);
-    const away = Number(score?.Participant2?.Total?.Goals ?? 0);
-    const secs = Number(e.Clock?.Seconds ?? 0);
-    const minute = Math.floor(secs / 60);
-    const state = e.GameState ?? "Update";
-    const label = labels[state] || state;
-
-    return { minute, label, homeScore: home, awayScore: away };
-  });
-}
+import type { PulseCupEvent, GeneratedMoment, Challenge, UserStreak, UserReaction, RecapCard, TxLINEFixture } from "@/lib/types";
+import { normalizeTxLINEArray } from "@/lib/txline/normalize-event";
+import { createMomentFromEvent } from "@/lib/pulse/moment-engine";
+import { createChallenge, resolveChallenge } from "@/lib/pulse/challenge-engine";
+import { createStreak, applyCorrectAnswer, applyWrongAnswer } from "@/lib/pulse/streak-engine";
+import { generateRecap } from "@/lib/pulse/recap-engine";
+import { getGuestProfileId } from "@/lib/guest";
+import { ReactionPanel } from "@/components/live/ReactionPanel";
+import { ChallengeCard } from "@/components/live/ChallengeCard";
+import { EventFeed } from "@/components/live/EventFeed";
+import { StreakBar } from "@/components/live/StreakBar";
 
 export default function ReplayPage() {
   const params = useParams();
   const fixtureId = Number(params.fixtureId);
-  const [events, setEvents] = useState<ParsedReplayEvent[]>([]);
+  const profileId = useRef<string | null>(null);
+
   const [fetchStatus, setFetchStatus] = useState<"loading" | "loaded" | "empty">("loading");
+  const [fixture, setFixture] = useState<TxLINEFixture | null>(null);
+  const [allEvents, setAllEvents] = useState<PulseCupEvent[]>([]);
+  const [visibleEvents, setVisibleEvents] = useState<PulseCupEvent[]>([]);
+  const [activeMoment, setActiveMoment] = useState<GeneratedMoment | null>(null);
+  const [activeEventId, setActiveEventId] = useState<string | null>(null);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [streak, setStreak] = useState<UserStreak | null>(null);
+  const [recapCard, setRecapCard] = useState<RecapCard | null>(null);
+
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(4);
-  const [eventIdx, setEventIdx] = useState(-1);
+  const [eventIdx, setEventIdx] = useState(0);
   const [completed, setCompleted] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const createdChallengeKeys = useRef<Set<string>>(new Set());
+  const sessionReactions = useRef<UserReaction[]>([]);
+  const lastEventRef = useRef<PulseCupEvent | null>(null);
 
   useEffect(() => {
+    profileId.current = getGuestProfileId();
+  }, []);
+
+  // Fetch fixture info
+  useEffect(() => {
+    fetch("/api/matches")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list: TxLINEFixture[]) => {
+        const f = list.find((x) => x.id === fixtureId);
+        if (f) setFixture(f);
+      })
+      .catch(() => {});
+  }, [fixtureId]);
+
+  // Fetch snapshot events
+  useEffect(() => {
     setFetchStatus("loading");
-    fetch(`/api/replay/${fixtureId}`)
+    fetch(`/api/scores/${fixtureId}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        const parsed = parseReplayEvents(data);
-        if (parsed.length > 0) {
-          setEvents(parsed);
+      .then((raw) => {
+        const normalized = normalizeTxLINEArray(raw).filter(
+          (e) => e.type !== "OTHER",
+        );
+        if (normalized.length > 0) {
+          setAllEvents(normalized);
           setFetchStatus("loaded");
         } else {
           setFetchStatus("empty");
@@ -75,20 +73,22 @@ export default function ReplayPage() {
       .catch(() => setFetchStatus("empty"));
   }, [fixtureId]);
 
+  // Advance to next event
   const advance = useCallback(() => {
     setEventIdx((prev) => {
       const next = prev + 1;
-      if (next >= events.length) {
+      if (next >= allEvents.length) {
         setPlaying(false);
         setCompleted(true);
         return prev;
       }
       return next;
     });
-  }, [events.length]);
+  }, [allEvents.length]);
 
+  // Timer loop
   useEffect(() => {
-    if (!playing || completed || events.length === 0) {
+    if (!playing || completed || allEvents.length === 0) {
       if (timerRef.current) clearTimeout(timerRef.current);
       return;
     }
@@ -97,23 +97,126 @@ export default function ReplayPage() {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [playing, eventIdx, speed, completed, advance, events.length]);
+  }, [playing, eventIdx, speed, completed, advance, allEvents.length]);
+
+  // Process event when index changes
+  useEffect(() => {
+    if (eventIdx < 0 || eventIdx >= allEvents.length) return;
+    const evt = allEvents[eventIdx];
+
+    setVisibleEvents((prev) => {
+      if (prev.some((e) => e.id === evt.id)) return prev;
+      return [...prev, evt];
+    });
+
+    // Run moment engine
+    const moment = createMomentFromEvent(evt);
+    setActiveMoment(moment);
+    setActiveEventId(evt.id);
+
+    // Generate challenge
+    if (moment.challenge) {
+      const chKey = `${evt.fixtureId}-${moment.challenge.type}-${evt.txlineSequence}`;
+      if (!createdChallengeKeys.current.has(chKey)) {
+        createdChallengeKeys.current.add(chKey);
+        const ch = createChallenge(
+          moment.challenge.type,
+          moment.challenge.prompt,
+          moment.challenge.options,
+          evt,
+        );
+        setChallenges((prev) => [...prev, ch]);
+      }
+    }
+
+    // Resolve open challenges
+    setChallenges((prev) => {
+      let updated = [...prev];
+      for (const ch of updated) {
+        if (ch.status !== "OPEN") continue;
+        const resolved = resolveChallenge(ch, evt);
+        if (resolved) {
+          updated = updated.map((c) => (c.id === resolved.id ? resolved : c));
+        }
+      }
+      return updated;
+    });
+
+    lastEventRef.current = evt;
+  }, [eventIdx, allEvents]);
+
+  // Generate recap when replay completes
+  useEffect(() => {
+    if (!completed || !profileId.current || !fixture || !lastEventRef.current) return;
+    const currentStreak = streak ?? createStreak(profileId.current, fixtureId);
+    const entries = challenges
+      .filter((c) => c.status !== "OPEN")
+      .map((c) => ({
+        id: `entry-${profileId.current}-${c.id}`,
+        profileId: profileId.current!,
+        challengeId: c.id,
+        selectedOption: c.correctOptionIndex ?? 0,
+        createdAt: c.resolvedAt ?? new Date().toISOString(),
+      }));
+    const recap = generateRecap({
+      profileId: profileId.current,
+      fixtureId,
+      homeTeam: fixture.homeTeam,
+      awayTeam: fixture.awayTeam,
+      finalEvent: lastEventRef.current,
+      reactions: sessionReactions.current,
+      challenges,
+      entries,
+      streak: currentStreak,
+    });
+    setRecapCard(recap);
+    fetch("/api/recaps", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(recap),
+    }).catch(() => {});
+  }, [completed]);
 
   function handlePlay() {
     if (completed) {
       setCompleted(false);
       setEventIdx(-1);
+      setVisibleEvents([]);
+      setChallenges([]);
+      setStreak(null);
+      setRecapCard(null);
+      setActiveMoment(null);
+      createdChallengeKeys.current.clear();
+      sessionReactions.current = [];
+      lastEventRef.current = null;
     }
     setPlaying(true);
   }
   function handlePause() { setPlaying(false); }
   function handleRestart() {
-    setEventIdx(-1);
-    setCompleted(false);
     setPlaying(false);
+    setCompleted(false);
+    setEventIdx(-1);
+    setVisibleEvents([]);
+    setChallenges([]);
+    setStreak(null);
+    setRecapCard(null);
+    setActiveMoment(null);
+    createdChallengeKeys.current.clear();
+    sessionReactions.current = [];
+    lastEventRef.current = null;
   }
 
-  const currentEvent = eventIdx >= 0 && eventIdx < events.length ? events[eventIdx] : null;
+  const currentEvent = eventIdx >= 0 && eventIdx < allEvents.length ? allEvents[eventIdx] : null;
+  const openChallenges = challenges.filter((c) => c.status === "OPEN");
+
+  const handleAnswered = useCallback((correct: boolean) => {
+    if (!profileId.current) return;
+    setStreak((prev) => {
+      const base = prev ?? createStreak(profileId.current!, fixtureId);
+      return correct ? applyCorrectAnswer(base, null) : applyWrongAnswer(base);
+    });
+  }, [fixtureId]);
 
   return (
     <div className="flex flex-col gap-4 px-4 pt-4">
@@ -122,7 +225,9 @@ export default function ReplayPage() {
       </Link>
 
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold">Replay Mode</h1>
+        <h1 className="text-lg font-bold">
+          {fixture ? `${fixture.homeTeam} vs ${fixture.awayTeam}` : "Replay Mode"}
+        </h1>
         <span className="rounded-full border border-violet/30 bg-violet/5 px-2.5 py-0.5 text-[10px] font-medium text-violet">
           REPLAY
         </span>
@@ -135,9 +240,9 @@ export default function ReplayPage() {
       {fetchStatus === "empty" && (
         <div className="glass-elevated px-4 py-8 text-center">
           <span className="text-2xl">📭</span>
-          <p className="mt-2 text-sm text-text-secondary">No historical data for this fixture</p>
+          <p className="mt-2 text-sm text-text-secondary">No replay data for this fixture</p>
           <p className="mt-1 text-xs text-text-secondary/50">
-            TxLINE historical data is only available for matches with recorded events.
+            The snapshot endpoint returned no match events for fixture {fixtureId}.
           </p>
           <Link
             href="/app/matches"
@@ -148,26 +253,25 @@ export default function ReplayPage() {
         </div>
       )}
 
-      {fetchStatus === "loaded" && events.length > 0 && (
+      {fetchStatus === "loaded" && allEvents.length > 0 && (
         <>
           <p className="text-xs leading-relaxed text-text-secondary">
-            Replaying {events.length} events from TxLINE historical data.
+            Replaying {allEvents.length} real TxLINE events for {fixture?.homeTeam ?? "Home"} vs {fixture?.awayTeam ?? "Away"}.
           </p>
 
-          {/* Scoreboard */}
+          {/* Scoreboard + Controls */}
           <div className="glass-elevated px-4 py-4">
-            <div className="flex items-center justify-center gap-6">
-              <span className="text-sm text-text-secondary">Home</span>
+            <div className="flex items-center justify-center gap-5">
+              <span className="text-sm text-text-secondary">{fixture?.homeTeam ?? "Home"}</span>
               <span className="text-3xl font-bold">
                 {currentEvent?.homeScore ?? 0} - {currentEvent?.awayScore ?? 0}
               </span>
-              <span className="text-sm text-text-secondary">Away</span>
+              <span className="text-sm text-text-secondary">{fixture?.awayTeam ?? "Away"}</span>
             </div>
             <div className="mt-2 text-center font-mono text-xs text-text-secondary/50">
-              {currentEvent?.minute ?? 0}'
+              {currentEvent?.minute ?? 0}&apos;
             </div>
 
-            {/* Controls */}
             <div className="mt-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <button onClick={handlePlay} disabled={playing || completed}
@@ -186,40 +290,123 @@ export default function ReplayPage() {
             </div>
           </div>
 
-          {/* Current event */}
-          {currentEvent && (
-            <div className="glass-elevated px-4 py-3 text-center animate-fade-in-up">
-              <p className="text-sm">
-                <span className="font-mono text-text-secondary/50">{currentEvent.minute}'</span>{" "}
-                {currentEvent.label}
-              </p>
+          {/* Active moment — reaction prompt */}
+          {activeMoment?.reactionPrompt && profileId.current && (
+            <div className="glass-elevated px-4 py-4 animate-fade-in-up">
+              <h3 className="text-sm font-semibold text-gold">{activeMoment.reactionPrompt.title}</h3>
+              <p className="mb-3 text-xs text-text-secondary">{activeMoment.reactionPrompt.body}</p>
+              <ReactionPanel
+                eventId={activeEventId ?? "unknown"}
+                fixtureId={fixtureId}
+                profileId={profileId.current}
+                options={activeMoment.reactionPrompt.options}
+                onReacted={() => {
+                  if (profileId.current && activeEventId) {
+                    sessionReactions.current.push({
+                      id: `react-${Date.now()}`,
+                      fixtureId,
+                      profileId: profileId.current,
+                      reactionId: "called-it",
+                      eventId: activeEventId,
+                      createdAt: new Date().toISOString(),
+                    });
+                  }
+                }}
+              />
             </div>
           )}
+
+          {/* Challenge cards */}
+          {openChallenges.length > 0 && profileId.current && (
+            <div className="flex flex-col gap-3">
+              <span className="text-[11px] font-medium text-text-secondary">Live Challenges</span>
+              {openChallenges.map((ch) => (
+                <ChallengeCard
+                  key={ch.id}
+                  challenge={ch}
+                  profileId={profileId.current!}
+                  onAnswered={handleAnswered}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Past challenges */}
+          {challenges.filter((c) => c.status !== "OPEN").length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[11px] font-medium text-text-secondary">Past Challenges</span>
+              {challenges
+                .filter((c) => c.status !== "OPEN")
+                .map((ch) => (
+                  <div key={ch.id} className="glass-card flex items-center gap-2 px-3 py-2">
+                    <span className={ch.status === "CORRECT" ? "text-mint" : "text-coral"}>
+                      {ch.status === "CORRECT" ? "✓" : "✗"}
+                    </span>
+                    <span className="flex-1 text-xs text-text-secondary/70 line-clamp-1">{ch.prompt}</span>
+                  </div>
+                ))}
+            </div>
+          )}
+
+          {/* Event feed */}
+          <EventFeed events={visibleEvents} />
+
+          {/* Streak */}
+          {profileId.current && <StreakBar streak={streak} />}
 
           {/* Progress */}
           <div className="glass-elevated px-4 py-3">
             <div className="flex items-center justify-between text-[10px] text-text-secondary/50">
-              <span>Event {eventIdx + 1} of {events.length}</span>
-              <span>{Math.round(((eventIdx + 1) / events.length) * 100)}%</span>
+              <span>Event {eventIdx + 1} of {allEvents.length}</span>
+              <span>{Math.round(((eventIdx + 1) / allEvents.length) * 100)}%</span>
             </div>
-            <div className="mt-1 h-1 rounded-full bg-elevated overflow-hidden">
+            <div className="mt-1 h-1 overflow-hidden rounded-full bg-elevated">
               <div className="h-1 rounded-full bg-coral transition-all duration-300"
-                style={{ width: `${((eventIdx + 1) / events.length) * 100}%` }} />
+                style={{ width: `${((eventIdx + 1) / allEvents.length) * 100}%` }} />
             </div>
           </div>
 
-          {/* Completed */}
+          {/* Completed — recap card */}
           {completed && (
-            <div className="glass-elevated border border-gold/20 px-4 py-6 text-center">
-              <span className="text-2xl">🏆</span>
-              <p className="mt-2 text-sm font-semibold text-gold">Replay Complete</p>
-              <p className="mt-1 text-xs text-text-secondary/60">{events.length} events replayed</p>
-              <div className="mt-4 flex justify-center gap-3">
-                <button onClick={handlePlay}
-                  className="rounded-lg bg-coral/20 px-4 py-2 text-xs font-semibold text-coral transition-all hover:bg-coral/30">🔄 Replay</button>
-                <Link href="/app/matches"
-                  className="rounded-lg border border-border px-4 py-2 text-xs text-text-secondary transition-all hover:bg-surface">More Matches</Link>
+            <div className="mb-8 flex flex-col gap-4">
+              <div className="glass-elevated border border-gold/20 px-4 py-6 text-center">
+                <span className="text-2xl">🏆</span>
+                <p className="mt-2 text-sm font-semibold text-gold">Replay Complete</p>
+                <p className="mt-1 text-xs text-text-secondary/60">{allEvents.length} events replayed</p>
               </div>
+
+              {recapCard && (
+                <div className="glass-elevated animate-fade-in-up px-4 py-4 text-center">
+                  <span className="text-[11px] font-medium text-text-secondary">Your Match Pulse</span>
+                  <p className="mt-1 text-sm font-bold text-text-primary">
+                    {recapCard.homeTeam} {recapCard.homeScore} - {recapCard.awayScore} {recapCard.awayTeam}
+                  </p>
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    <div className="rounded-lg bg-white/[4%] px-2 py-2">
+                      <span className="text-lg font-bold text-gold">{recapCard.correctCalls}</span>
+                      <p className="text-[9px] text-text-secondary/50">Correct</p>
+                    </div>
+                    <div className="rounded-lg bg-white/[4%] px-2 py-2">
+                      <span className="text-lg font-bold text-violet">{recapCard.bestStreak}</span>
+                      <p className="text-[9px] text-text-secondary/50">Best streak</p>
+                    </div>
+                    <div className="rounded-lg bg-white/[4%] px-2 py-2">
+                      <span className="text-lg font-bold text-mint">{recapCard.fastestReaction}</span>
+                      <p className="text-[9px] text-text-secondary/50">Fastest</p>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-gold font-medium">{recapCard.mood}</div>
+                  <Link
+                    href={`/app/share/${recapCard.id}`}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-coral/15 px-4 py-2 text-xs font-medium text-coral transition-all hover:bg-coral/25"
+                  >
+                    Share recap
+                  </Link>
+                </div>
+              )}
+
+              <button onClick={handlePlay}
+                className="rounded-lg bg-coral/20 px-4 py-2.5 text-xs font-semibold text-coral transition-all hover:bg-coral/30">🔄 Replay</button>
             </div>
           )}
         </>

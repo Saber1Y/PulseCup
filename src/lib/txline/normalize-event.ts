@@ -42,8 +42,8 @@ function nextId(): string {
 
 function determineTeam(raw: TxLINERawEvent): "HOME" | "AWAY" | undefined {
   const participant = raw.Participant;
-  if (participant) {
-    const lower = participant.toLowerCase();
+  if (participant != null) {
+    const lower = String(participant).toLowerCase();
     if (lower.includes("home") || lower === "1") return "HOME";
     if (lower.includes("away") || lower === "2") return "AWAY";
   }
