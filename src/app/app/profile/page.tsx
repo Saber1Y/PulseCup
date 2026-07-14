@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { IoStatsChart, IoFootball } from "react-icons/io5";
 import { getGuestProfileId } from "@/lib/guest";
 import type { RecapCard } from "@/lib/types";
 
@@ -64,7 +65,7 @@ export default function ProfilePage() {
       ) : (
         <>
           <div className="glass-elevated px-4 py-8 text-center">
-            <span className="text-3xl">📊</span>
+            <IoStatsChart className="mx-auto text-3xl text-text-secondary/40" />
             <p className="mt-3 text-sm text-text-secondary">No stats yet</p>
             <p className="mt-1 text-xs text-text-secondary/50">
               Stats appear after you watch a match and answer challenges.

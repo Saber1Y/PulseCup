@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { RecapCard } from "@/lib/types";
+import { IoFlash, IoImageOutline } from "react-icons/io5";
 
 export default function ShareCardPage() {
   const params = useParams();
@@ -44,7 +45,7 @@ export default function ShareCardPage() {
         <h1 className="text-lg font-bold">Match Recap</h1>
         <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-coral/20 via-violet/20 to-gold/10 p-[1px]">
           <div className="rounded-2xl bg-bg-deep px-6 py-8 text-center">
-            <span className="text-2xl">🖼️</span>
+            <IoImageOutline className="mx-auto text-2xl text-text-secondary/40" />
             <p className="mt-3 text-sm text-text-secondary">Recap cards are generated after each match</p>
             <p className="mt-1 text-xs text-text-secondary/50">
               Shareable recap cards will appear here with your streaks, reactions, and match stats.
@@ -70,7 +71,7 @@ export default function ShareCardPage() {
 
       <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-coral/20 via-violet/20 to-gold/10 p-[1px]">
         <div className="rounded-2xl bg-bg-deep px-6 py-8 text-center">
-          <span className="text-3xl">⚡</span>
+          <IoFlash className="mx-auto text-3xl text-gold" />
           <p className="mt-2 text-lg font-bold text-text-primary">
             {card.homeTeam} {card.homeScore} - {card.awayScore} {card.awayTeam}
           </p>
