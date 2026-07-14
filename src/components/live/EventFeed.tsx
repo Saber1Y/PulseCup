@@ -51,11 +51,13 @@ export function EventFeed({ events }: Props) {
     );
   }
 
+  const sorted = [...events].sort((a, b) => a.txlineSequence - b.txlineSequence);
+
   return (
     <div className="glass-elevated px-4 py-4">
       <span className="text-[11px] font-medium text-text-secondary">Match Events</span>
       <div className="mt-3 flex flex-col gap-0">
-        {events.map((evt) => {
+        {sorted.map((evt) => {
           const meta = EVENT_META[evt.type] ?? EVENT_META.SCORE_UPDATE;
           return (
             <div

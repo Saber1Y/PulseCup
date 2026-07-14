@@ -117,19 +117,19 @@ export default function LiveRoom() {
         setActiveEventId(evt.id);
       }
 
-      // Generate challenge if applicable
+      // Generate challenge if applicable (only one open per type)
       if (moment.challenge) {
-        const chKey = `${evt.fixtureId}-${moment.challenge.type}-${evt.txlineSequence}`;
-        if (!createdChallengeKeys.current.has(chKey)) {
-          createdChallengeKeys.current.add(chKey);
+        const type = moment.challenge.type;
+        const alreadyOpen = createdChallengeKeys.current.has(`${evt.fixtureId}-${type}`);
+        if (!alreadyOpen) {
+          createdChallengeKeys.current.add(`${evt.fixtureId}-${type}`);
           const ch = createChallenge(
-            moment.challenge.type,
+            type,
             moment.challenge.prompt,
             moment.challenge.options,
             evt,
           );
 
-          // POST to API for persistence
           fetch("/api/challenges", {
             method: "POST",
             headers: { "Content-Type": "application/json" },

@@ -115,13 +115,14 @@ export default function ReplayPage() {
     setActiveMoment(moment);
     setActiveEventId(evt.id);
 
-    // Generate challenge
+    // Generate challenge (only one open per type)
     if (moment.challenge) {
-      const chKey = `${evt.fixtureId}-${moment.challenge.type}-${evt.txlineSequence}`;
-      if (!createdChallengeKeys.current.has(chKey)) {
-        createdChallengeKeys.current.add(chKey);
+      const type = moment.challenge.type;
+      const alreadyOpen = createdChallengeKeys.current.has(`${evt.fixtureId}-${type}`);
+      if (!alreadyOpen) {
+        createdChallengeKeys.current.add(`${evt.fixtureId}-${type}`);
         const ch = createChallenge(
-          moment.challenge.type,
+          type,
           moment.challenge.prompt,
           moment.challenge.options,
           evt,
