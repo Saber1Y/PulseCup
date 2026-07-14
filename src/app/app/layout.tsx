@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import AppBottomNav from "@/components/AppBottomNav";
 import { Logo } from "@/components/Logo";
-import { SolanaWalletProvider } from "@/components/wallet/WalletProvider";
 
 export const metadata: Metadata = {
   title: "PulseCup — Live Match Room",
@@ -10,18 +9,16 @@ export const metadata: Metadata = {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SolanaWalletProvider>
-      <div className="mx-auto min-h-screen max-w-lg pb-20">
-        <div className="sticky top-0 z-50 border-b border-border bg-bg-deep/90 backdrop-blur-xl">
-          <div className="flex items-center px-4 py-2.5">
-            <Link href="/app/matches" className="flex items-center gap-2">
-              <Logo size="sm" />
-            </Link>
-          </div>
+    <div className="mx-auto min-h-screen max-w-lg pb-20">
+      <div className="sticky top-0 z-50 border-b border-border bg-bg-deep/90 backdrop-blur-xl">
+        <div className="flex items-center px-4 py-2.5">
+          <Link href="/app/matches" className="flex items-center gap-2">
+            <Logo size="sm" />
+          </Link>
         </div>
-        {children}
-        <AppBottomNav />
       </div>
-    </SolanaWalletProvider>
+      {children}
+      <AppBottomNav />
+    </div>
   );
 }
