@@ -53,11 +53,20 @@ export function EventFeed({ events }: Props) {
 
   const sorted = [...events].sort((a, b) => a.txlineSequence - b.txlineSequence);
 
+  // Dedup by minute+type+team+score to squash identical-looking entries
+  const seen = new Set<string>();
+  const deduped = sorted.filter((evt) => {
+    const key = `${evt.minute}|${evt.type}|${evt.team ?? ""}|${evt.homeScore}|${evt.awayScore}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
   return (
     <div className="glass-elevated px-4 py-4">
       <span className="text-[11px] font-medium text-text-secondary">Match Events</span>
       <div className="mt-3 flex flex-col gap-0">
-        {sorted.map((evt) => {
+        {deduped.map((evt) => {
           const meta = EVENT_META[evt.type] ?? EVENT_META.SCORE_UPDATE;
           return (
             <div
