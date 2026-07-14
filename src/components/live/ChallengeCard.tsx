@@ -6,37 +6,36 @@ import type { Challenge } from "@/lib/types";
 interface Props {
   challenge: Challenge;
   profileId: string;
-  onAnswered: (correct: boolean) => void;
+  onAnswered: (correct: boolean | null) => void;
+  onChallengeAnswer?: (challengeId: string, optionIndex: number) => void;
 }
 
-export function ChallengeCard({ challenge, profileId, onAnswered }: Props) {
-  const [selected, setSelected] = useState<number | null>(null);
-  const [resolved, setResolved] = useState(false);
-  const [correct, setCorrect] = useState<boolean | null>(null);
+export function ChallengeCard({ challenge, profileId, onAnswered, onChallengeAnswer }: Props) {
   const [posting, setPosting] = useState(false);
+
+  const selected = challenge.selectedOptionIndex ?? null;
+  const resolved = challenge.status === "CORRECT" || challenge.status === "WRONG";
+  const correct = resolved && challenge.correctOptionIndex !== null
+    ? selected === challenge.correctOptionIndex
+    : null;
 
   const handleSelect = useCallback(async (index: number) => {
     if (posting || selected !== null) return;
     setPosting(true);
-    setSelected(index);
+    // Persist answer
     try {
-      const res = await fetch("/api/challenges/answer", {
+      await fetch("/api/challenges/answer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ profileId, challengeId: challenge.id, selectedOption: index }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setResolved(data.resolved);
-        setCorrect(data.correct);
-        onAnswered(data.correct);
-      }
     } catch {
       // silent
-    } finally {
-      setPosting(false);
     }
-  }, [challenge.id, profileId, posting, selected, onAnswered]);
+    // Update parent state
+    onChallengeAnswer?.(challenge.id, index);
+    setPosting(false);
+  }, [challenge.id, profileId, posting, selected, onChallengeAnswer]);
 
   return (
     <div className="glass-elevated px-4 py-4">
@@ -79,6 +78,9 @@ export function ChallengeCard({ challenge, profileId, onAnswered }: Props) {
         })}
       </div>
 
+      {selected !== null && !resolved && (
+        <p className="mt-2 text-[11px] font-medium text-violet">Answer submitted — waiting for resolution...</p>
+      )}
       {resolved && (
         <p className={`mt-2 text-[11px] font-medium ${correct ? "text-mint" : "text-coral"}`}>
           {correct ? "Correct!" : "Wrong answer"}

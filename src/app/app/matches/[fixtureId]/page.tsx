@@ -140,20 +140,21 @@ export default function LiveRoom() {
         }
       }
 
-      // Try to resolve existing open challenges
+      // Resolve challenges the user has answered
       setChallenges((prev) => {
         let updated = [...prev];
         for (const ch of updated) {
-          if (ch.status !== "OPEN") continue;
+          if (ch.status !== "OPEN" || ch.selectedOptionIndex === undefined) continue;
           const resolved = resolveChallenge(ch, evt);
           if (resolved) {
+            const isCorrect = ch.selectedOptionIndex === resolved.correctOptionIndex;
             updated = updated.map((c) => (c.id === resolved.id ? resolved : c));
-            // POST to resolve endpoint for persistence
             fetch("/api/challenges/resolve", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ fixtureId, rawEvents: [evt.raw] }),
             }).catch(() => {});
+            setTimeout(() => handleAnswered(isCorrect), 0);
           }
         }
         return updated;
@@ -272,13 +273,11 @@ export default function LiveRoom() {
   }, [fixtureId]);
 
   // Handle challenge answer
-  const handleAnswered = useCallback((correct: boolean) => {
-    if (!profileId.current) return;
-    const now = Date.now();
+  const handleAnswered = useCallback((correct: boolean | null) => {
+    if (!profileId.current || correct === null) return;
     setStreak((prev) => {
       const base = prev ?? createStreak(profileId.current!, fixtureId);
       const updated = correct ? applyCorrectAnswer(base, null) : applyWrongAnswer(base);
-      // Persist
       fetch("/api/streaks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -287,6 +286,12 @@ export default function LiveRoom() {
       return updated;
     });
   }, [fixtureId]);
+
+  const handleChallengeAnswer = useCallback((challengeId: string, optionIndex: number) => {
+    setChallenges((prev) =>
+      prev.map((c) => (c.id === challengeId ? { ...c, selectedOptionIndex: optionIndex } : c)),
+    );
+  }, []);
 
   const displayStatus = score?.status ?? (fixture && new Date(fixture.startDate).getTime() < Date.now() ? "finished" : "upcoming");
   const badge = statusBadge(displayStatus);
@@ -388,6 +393,7 @@ export default function LiveRoom() {
               challenge={ch}
               profileId={profileId.current!}
               onAnswered={handleAnswered}
+              onChallengeAnswer={handleChallengeAnswer}
             />
           ))}
         </div>

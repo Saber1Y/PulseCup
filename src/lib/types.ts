@@ -98,6 +98,7 @@ export interface Challenge {
   options: string[];
   status: ChallengeStatus;
   correctOptionIndex: number | null;
+  selectedOptionIndex?: number;
   triggerEventId: string | null;
   createdByEventId: string;
   createdAt: string;

@@ -130,14 +130,16 @@ export default function ReplayPage() {
       }
     }
 
-    // Resolve open challenges
+    // Resolve answered challenges
     setChallenges((prev) => {
       let updated = [...prev];
       for (const ch of updated) {
-        if (ch.status !== "OPEN") continue;
+        if (ch.status !== "OPEN" || ch.selectedOptionIndex === undefined) continue;
         const resolved = resolveChallenge(ch, evt);
         if (resolved) {
+          const isCorrect = ch.selectedOptionIndex === resolved.correctOptionIndex;
           updated = updated.map((c) => (c.id === resolved.id ? resolved : c));
+          setTimeout(() => handleAnswered(isCorrect), 0);
         }
       }
       return updated;
@@ -211,13 +213,19 @@ export default function ReplayPage() {
   const currentEvent = eventIdx >= 0 && eventIdx < allEvents.length ? allEvents[eventIdx] : null;
   const openChallenges = challenges.filter((c) => c.status === "OPEN");
 
-  const handleAnswered = useCallback((correct: boolean) => {
-    if (!profileId.current) return;
+  const handleAnswered = useCallback((correct: boolean | null) => {
+    if (!profileId.current || correct === null) return;
     setStreak((prev) => {
       const base = prev ?? createStreak(profileId.current!, fixtureId);
       return correct ? applyCorrectAnswer(base, null) : applyWrongAnswer(base);
     });
   }, [fixtureId]);
+
+  const handleChallengeAnswer = useCallback((challengeId: string, optionIndex: number) => {
+    setChallenges((prev) =>
+      prev.map((c) => (c.id === challengeId ? { ...c, selectedOptionIndex: optionIndex } : c)),
+    );
+  }, []);
 
   return (
     <div className="flex flex-col gap-4 px-4 pt-4">
@@ -327,6 +335,7 @@ export default function ReplayPage() {
                   challenge={ch}
                   profileId={profileId.current!}
                   onAnswered={handleAnswered}
+                  onChallengeAnswer={handleChallengeAnswer}
                 />
               ))}
             </div>
