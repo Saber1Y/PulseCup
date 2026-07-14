@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { IoStatsChart, IoFootball } from "react-icons/io5";
+import { TeamWithFlag } from "@/lib/flags";
 import { getGuestProfileId } from "@/lib/guest";
 import type { RecapCard } from "@/lib/types";
 
@@ -52,7 +53,7 @@ export default function ProfilePage() {
             >
               <div className="flex flex-col gap-1">
                 <span className="text-sm font-medium text-text-primary">
-                  {r.homeTeam} {r.homeScore} - {r.awayScore} {r.awayTeam}
+                  <TeamWithFlag name={r.homeTeam} /> {r.homeScore} - {r.awayScore} <TeamWithFlag name={r.awayTeam} />
                 </span>
                 <span className="text-[10px] text-text-secondary/50">
                   {r.mood} · {r.correctCalls} correct · Best streak {r.bestStreak}

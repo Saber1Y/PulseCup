@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import type { TxLINEFixture } from "@/lib/types";
+import { TeamWithFlag } from "@/lib/flags";
 
 const TABS = ["All", "Live", "Upcoming", "Finished", "Replay"] as const;
 type Tab = (typeof TABS)[number];
@@ -53,11 +54,11 @@ function MatchCard({ f }: { f: TxLINEFixture }) {
         </span>
       </div>
       <div className="flex items-center justify-center gap-6">
-        <span className="text-sm font-medium text-text-primary">{f.homeTeam}</span>
+        <TeamWithFlag name={f.homeTeam} className="text-sm font-medium text-text-primary" />
         <span className="text-lg font-bold">
           {status === "upcoming" ? "vs" : "2 - 1"}
         </span>
-        <span className="text-sm font-medium text-text-primary">{f.awayTeam}</span>
+        <TeamWithFlag name={f.awayTeam} className="text-sm font-medium text-text-primary" />
       </div>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

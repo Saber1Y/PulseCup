@@ -15,6 +15,7 @@ import { ChallengeCard } from "@/components/live/ChallengeCard";
 import { EventFeed } from "@/components/live/EventFeed";
 import { StreakBar } from "@/components/live/StreakBar";
 import { IoReloadOutline } from "react-icons/io5";
+import { teamFlag, TeamWithFlag } from "@/lib/flags";
 
 interface ParsedScore {
   homeScore: number;
@@ -322,12 +323,12 @@ export default function LiveRoom() {
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-center gap-5">
+              <div className="flex items-center justify-center gap-5">
               <div className="flex flex-col items-center gap-1.5">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-xs font-bold text-text-secondary">
-                  {fixture?.homeTeam.charAt(0) ?? "?"}
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-lg">
+                  {fixture ? teamFlag(fixture.homeTeam) || fixture.homeTeam.charAt(0) : "?"}
                 </div>
-                <span className="text-xs text-text-secondary">{fixture?.homeTeam ?? "Home"}</span>
+                <TeamWithFlag name={fixture?.homeTeam ?? "Home"} className="text-xs text-text-secondary" />
               </div>
               <div className="flex flex-col items-center">
                 <span className="text-3xl font-bold">
@@ -336,10 +337,10 @@ export default function LiveRoom() {
                 {score && <span className="font-mono text-xs text-text-secondary/50">{score.minute}&apos;</span>}
               </div>
               <div className="flex flex-col items-center gap-1.5">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-xs font-bold text-text-secondary">
-                  {fixture?.awayTeam.charAt(0) ?? "?"}
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-lg">
+                  {fixture ? teamFlag(fixture.awayTeam) || fixture.awayTeam.charAt(0) : "?"}
                 </div>
-                <span className="text-xs text-text-secondary">{fixture?.awayTeam ?? "Away"}</span>
+                <TeamWithFlag name={fixture?.awayTeam ?? "Away"} className="text-xs text-text-secondary" />
               </div>
             </div>
             {scoreStatus === "loaded" && score && (

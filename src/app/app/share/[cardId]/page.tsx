@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { RecapCard } from "@/lib/types";
 import { IoFlash, IoImageOutline } from "react-icons/io5";
+import { TeamWithFlag } from "@/lib/flags";
 
 export default function ShareCardPage() {
   const params = useParams();
@@ -73,7 +74,7 @@ export default function ShareCardPage() {
         <div className="rounded-2xl bg-bg-deep px-6 py-8 text-center">
           <IoFlash className="mx-auto text-3xl text-gold" />
           <p className="mt-2 text-lg font-bold text-text-primary">
-            {card.homeTeam} {card.homeScore} - {card.awayScore} {card.awayTeam}
+            <TeamWithFlag name={card.homeTeam} /> {card.homeScore} - {card.awayScore} <TeamWithFlag name={card.awayTeam} />
           </p>
 
           <div className="mt-6 grid grid-cols-3 gap-3">

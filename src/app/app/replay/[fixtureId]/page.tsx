@@ -15,6 +15,7 @@ import { ChallengeCard } from "@/components/live/ChallengeCard";
 import { EventFeed } from "@/components/live/EventFeed";
 import { StreakBar } from "@/components/live/StreakBar";
 import { IoMailOpenOutline, IoPlaySharp, IoPauseSharp, IoReloadOutline, IoTrophyOutline } from "react-icons/io5";
+import { teamFlag, TeamWithFlag } from "@/lib/flags";
 
 export default function ReplayPage() {
   const params = useParams();
@@ -236,7 +237,7 @@ export default function ReplayPage() {
 
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold">
-          {fixture ? `${fixture.homeTeam} vs ${fixture.awayTeam}` : "Replay Mode"}
+          {fixture ? <><TeamWithFlag name={fixture.homeTeam} /> vs <TeamWithFlag name={fixture.awayTeam} /></> : "Replay Mode"}
         </h1>
         <span className="rounded-full border border-violet/30 bg-violet/5 px-2.5 py-0.5 text-[10px] font-medium text-violet">
           REPLAY
@@ -272,11 +273,11 @@ export default function ReplayPage() {
           {/* Scoreboard + Controls */}
           <div className="glass-elevated px-4 py-4">
             <div className="flex items-center justify-center gap-5">
-              <span className="text-sm text-text-secondary">{fixture?.homeTeam ?? "Home"}</span>
+              <TeamWithFlag name={fixture?.homeTeam ?? "Home"} className="text-sm text-text-secondary" />
               <span className="text-3xl font-bold">
                 {currentEvent?.homeScore ?? 0} - {currentEvent?.awayScore ?? 0}
               </span>
-              <span className="text-sm text-text-secondary">{fixture?.awayTeam ?? "Away"}</span>
+              <TeamWithFlag name={fixture?.awayTeam ?? "Away"} className="text-sm text-text-secondary" />
             </div>
             <div className="mt-2 text-center font-mono text-xs text-text-secondary/50">
               {currentEvent?.type === "MATCH_ENDED" ? "FT" : `${currentEvent?.minute ?? 0}'`}
