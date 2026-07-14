@@ -15,7 +15,7 @@ import { ChallengeCard } from "@/components/live/ChallengeCard";
 import { EventFeed } from "@/components/live/EventFeed";
 import { StreakBar } from "@/components/live/StreakBar";
 import { IoReloadOutline } from "react-icons/io5";
-import { teamFlag, TeamWithFlag } from "@/lib/flags";
+import { teamFlag } from "@/lib/flags";
 
 interface ParsedScore {
   homeScore: number;
@@ -230,15 +230,25 @@ export default function LiveRoom() {
     };
   }, [fixtureId, processRawEvents]);
 
-  // Fetch existing challenges on mount
+  // Fetch existing challenges on mount (deduplicated by type)
   useEffect(() => {
     if (!fixtureId) return;
     fetch(`/api/challenges?fixtureId=${fixtureId}`)
       .then((r) => (r.ok ? r.json() : []))
       .then((data: any[]) => {
         if (Array.isArray(data) && data.length > 0) {
+          // Keep only the most recent challenge per type
+          const latestPerType = new Map<string, any>();
+          for (const c of data) {
+            const key = `${c.fixture_id}-${c.challenge_type}`;
+            const existing = latestPerType.get(key);
+            if (!existing || (c.created_at && c.created_at > existing.created_at)) {
+              latestPerType.set(key, c);
+            }
+          }
+          const deduped = Array.from(latestPerType.values());
           setChallenges(
-            data.map((c: any) => ({
+            deduped.map((c: any) => ({
               id: c.id,
               fixtureId: c.fixture_id,
               type: c.challenge_type,
@@ -252,9 +262,9 @@ export default function LiveRoom() {
               resolvedAt: c.resolved_at,
             })),
           );
-          data.forEach((c: any) => {
+          deduped.forEach((c: any) => {
             createdChallengeKeys.current.add(
-              `${c.fixture_id}-${c.challenge_type}-${c.created_by_event_id}`,
+              `${c.fixture_id}-${c.challenge_type}`,
             );
           });
         }
@@ -328,7 +338,7 @@ export default function LiveRoom() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-lg">
                   {fixture ? teamFlag(fixture.homeTeam) || fixture.homeTeam.charAt(0) : "?"}
                 </div>
-                <TeamWithFlag name={fixture?.homeTeam ?? "Home"} className="text-xs text-text-secondary" />
+                <span className="text-xs text-text-secondary">{fixture?.homeTeam ?? "Home"}</span>
               </div>
               <div className="flex flex-col items-center">
                 <span className="text-3xl font-bold">
@@ -340,7 +350,7 @@ export default function LiveRoom() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-lg">
                   {fixture ? teamFlag(fixture.awayTeam) || fixture.awayTeam.charAt(0) : "?"}
                 </div>
-                <TeamWithFlag name={fixture?.awayTeam ?? "Away"} className="text-xs text-text-secondary" />
+                <span className="text-xs text-text-secondary">{fixture?.awayTeam ?? "Away"}</span>
               </div>
             </div>
             {scoreStatus === "loaded" && score && (
