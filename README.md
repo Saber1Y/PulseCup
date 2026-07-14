@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PulseCup
+
+A mobile-first World Cup companion app powered by TxLINE.
+Fans react to goals, cards, and corners in real-time, answer quick live challenges,
+build streaks with escalating moods, and generate shareable recap cards after each match.
+
+Built with Next.js 16, TypeScript, Tailwind CSS v4, Supabase, and TxLINE sports data.
+
+## Features
+
+- **Live Room** — Real-time match events streamed from TxLINE, reaction prompts, live challenges, streak tracking
+- **Replay Mode** — Replay full matches event-by-event with adjustable speed (2x–16x), reactions, challenges, and recap generation
+- **Challenge Engine** — Three challenge types (NEXT_GOAL, TOTAL_GOALS_REACH_3, NEXT_MAJOR_EVENT) resolved from real events
+- **Streak System** — 5-tier mood ladder (Casual Fan → Getting Warm → Sharp Eye → Chaos Merchant → Legend)
+- **Recap Cards** — Auto-generated shareable cards with stats, mood, and match summary
+- **Guest Mode** — No sign-up required (localStorage guest ID), Solana wallet optional
+
+## Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16 (App Router, Turbopack) |
+| Styling | Tailwind CSS v4 |
+| Data Source | TxLINE (txline-dev.txodds.com) |
+| Database | Supabase (profiles, reactions, challenges, streaks, recaps) |
+| Icons | react-icons (Ionicons 5) |
+| Font | Sora (next/font) |
+| Auth | Guest mode (localStorage) + optional Solana wallet |
 
 ## Getting Started
 
-First, run the development server:
+Copy `.env.local.example` to `.env.local` and fill in your credentials:
+
+```env
+TXLINE_BASE_URL=https://txline-dev.txodds.com
+TXLINE_JWT=your_jwt
+TXLINE_API_TOKEN=your_token
+SUPABASE_SERVICE_ROLE_KEY=your_key
+NEXT_PUBLIC_SUPABASE_URL=your_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+```
+
+Run the dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open **http://localhost:3000**.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Testing the full flow
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The demo fixture is **18222446** (Argentina vs Switzerland, 42 events).
 
-## Learn More
+1. Visit `/app/replay/18222446` and click Play
+2. React to moments, answer challenges, watch streaks grow
+3. At the end, a recap card is generated and saved
+4. Visit `/app/profile` to see your recap cards
+5. Share a card from `/app/share/[cardId]`
 
-To learn more about Next.js, take a look at the following resources:
+## Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+├── app/
+│   ├── api/             # API routes (TxLINE proxy + Supabase CRUD)
+│   ├── app/
+│   │   ├── matches/     # Match hub + live room
+│   │   ├── profile/     # User recap cards
+│   │   ├── replay/      # Replay mode
+│   │   └── share/       # Shareable recap cards
+│   └── page.tsx         # Landing page
+├── components/
+│   ├── live/            # ReactionPanel, ChallengeCard, EventFeed, StreakBar
+│   ├── AppBottomNav.tsx # Bottom navigation
+│   └── Logo.tsx         # PulseCup logo
+└── lib/
+    ├── pulse/           # Engine: moment, challenge, streak, recap
+    ├── txline/          # TxLINE event normalizer
+    ├── supabase/        # Database client + schema
+    └── guest.ts         # Guest profile ID
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## TxLINE Integration
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+PulseCup uses the `Action` field (not `GameState`) for event detection.
+See `src/lib/txline/normalize-event.ts` for the action-to-event-type mapping.
+TxLINE dev only has 1 rich fixture (18222446) — snapshot endpoint returns 42 events.
