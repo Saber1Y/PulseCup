@@ -14,6 +14,7 @@ import { ReactionPanel } from "@/components/live/ReactionPanel";
 import { ChallengeCard } from "@/components/live/ChallengeCard";
 import { EventFeed } from "@/components/live/EventFeed";
 import { StreakBar } from "@/components/live/StreakBar";
+import { IoMailOpenOutline, IoPlaySharp, IoPauseSharp, IoReloadOutline, IoTrophyOutline } from "react-icons/io5";
 
 export default function ReplayPage() {
   const params = useParams();
@@ -31,7 +32,7 @@ export default function ReplayPage() {
   const [recapCard, setRecapCard] = useState<RecapCard | null>(null);
 
   const [playing, setPlaying] = useState(false);
-  const [speed, setSpeed] = useState(4);
+  const [speed, setSpeed] = useState(2);
   const [eventIdx, setEventIdx] = useState(0);
   const [completed, setCompleted] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -239,7 +240,7 @@ export default function ReplayPage() {
 
       {fetchStatus === "empty" && (
         <div className="glass-elevated px-4 py-8 text-center">
-          <span className="text-2xl">📭</span>
+          <IoMailOpenOutline className="mx-auto text-2xl text-text-secondary/40" />
           <p className="mt-2 text-sm text-text-secondary">No replay data for this fixture</p>
           <p className="mt-1 text-xs text-text-secondary/50">
             The snapshot endpoint returned no match events for fixture {fixtureId}.
@@ -269,17 +270,17 @@ export default function ReplayPage() {
               <span className="text-sm text-text-secondary">{fixture?.awayTeam ?? "Away"}</span>
             </div>
             <div className="mt-2 text-center font-mono text-xs text-text-secondary/50">
-              {currentEvent?.minute ?? 0}&apos;
+              {currentEvent?.type === "MATCH_ENDED" ? "FT" : `${currentEvent?.minute ?? 0}'`}
             </div>
 
             <div className="mt-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <button onClick={handlePlay} disabled={playing || completed}
-                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-coral/20 text-xs text-coral transition-all hover:bg-coral/30 disabled:opacity-30">▶</button>
+                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-coral/20 text-xs text-coral transition-all hover:bg-coral/30 disabled:opacity-30"><IoPlaySharp /></button>
                 <button onClick={handlePause} disabled={!playing}
-                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface text-xs text-text-secondary transition-all hover:bg-elevated disabled:opacity-30">⏸</button>
+                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface text-xs text-text-secondary transition-all hover:bg-elevated disabled:opacity-30"><IoPauseSharp /></button>
                 <button onClick={handleRestart}
-                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface text-xs text-text-secondary transition-all hover:bg-elevated">↺</button>
+                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface text-xs text-text-secondary transition-all hover:bg-elevated"><IoReloadOutline /></button>
               </div>
               <div className="flex items-center gap-1">
                 {[2, 4, 8, 16].map((s) => (
@@ -370,7 +371,7 @@ export default function ReplayPage() {
           {completed && (
             <div className="mb-8 flex flex-col gap-4">
               <div className="glass-elevated border border-gold/20 px-4 py-6 text-center">
-                <span className="text-2xl">🏆</span>
+                <IoTrophyOutline className="mx-auto text-2xl text-gold" />
                 <p className="mt-2 text-sm font-semibold text-gold">Replay Complete</p>
                 <p className="mt-1 text-xs text-text-secondary/60">{allEvents.length} events replayed</p>
               </div>
@@ -406,7 +407,7 @@ export default function ReplayPage() {
               )}
 
               <button onClick={handlePlay}
-                className="rounded-lg bg-coral/20 px-4 py-2.5 text-xs font-semibold text-coral transition-all hover:bg-coral/30">🔄 Replay</button>
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-coral/20 px-4 py-2.5 text-xs font-semibold text-coral transition-all hover:bg-coral/30"><IoReloadOutline /> Replay</button>
             </div>
           )}
         </>

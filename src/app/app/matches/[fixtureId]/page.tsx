@@ -14,6 +14,7 @@ import { ReactionPanel } from "@/components/live/ReactionPanel";
 import { ChallengeCard } from "@/components/live/ChallengeCard";
 import { EventFeed } from "@/components/live/EventFeed";
 import { StreakBar } from "@/components/live/StreakBar";
+import { IoReloadOutline } from "react-icons/io5";
 
 interface ParsedScore {
   homeScore: number;
@@ -449,7 +450,7 @@ export default function LiveRoom() {
           href={`/app/replay/${fixtureId}`}
           className="mb-8 flex items-center justify-center gap-2 rounded-xl border border-violet/30 bg-violet/5 px-4 py-3 text-sm font-medium text-violet transition-all hover:bg-violet/10 active:scale-[0.97]"
         >
-          <span>↺</span> Open in Replay Mode
+          <IoReloadOutline /> Open in Replay Mode
         </Link>
       )}
     </div>

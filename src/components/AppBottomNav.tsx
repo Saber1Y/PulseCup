@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { IoFootball, IoRadioOutline, IoReloadOutline, IoPersonOutline } from "react-icons/io5";
 
 const tabs = [
-  { href: "/app/matches", label: "Matches", icon: "⚽" },
-  { href: "/app/matches?tab=live", label: "Live", icon: "●" },
-  { href: "/app/replay/1", label: "Replay", icon: "↺" },
-  { href: "/app/profile", label: "Profile", icon: "◉" },
+  { href: "/app/matches", label: "Matches", icon: IoFootball },
+  { href: "/app/matches?tab=live", label: "Live", icon: IoRadioOutline },
+  { href: "/app/replay/1", label: "Replay", icon: IoReloadOutline },
+  { href: "/app/profile", label: "Profile", icon: IoPersonOutline },
 ];
 
 export default function AppBottomNav() {
@@ -17,6 +18,7 @@ export default function AppBottomNav() {
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-lg items-center justify-around px-2 py-2">
         {tabs.map((t) => {
+          const Icon = t.icon;
           const active = pathname.startsWith(t.href.split("?")[0]);
           return (
             <Link
@@ -26,7 +28,7 @@ export default function AppBottomNav() {
                 active ? "text-coral" : "text-text-secondary/50"
               }`}
             >
-              <span className="text-lg">{t.icon}</span>
+              <Icon className="text-lg" />
               <span className="text-[10px] font-medium">{t.label}</span>
             </Link>
           );
