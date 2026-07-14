@@ -92,20 +92,20 @@ export default function LiveRoom() {
     // Mark all as seen
     newEvents.forEach((e: PulseCupEvent) => seenSeqs.current.add(e.txlineSequence));
 
-    // Update score from latest meaningful event
-    const matchEvents = newEvents.filter((e: PulseCupEvent) => e.type !== "OTHER");
-    const latest = matchEvents.length > 0
-      ? matchEvents[matchEvents.length - 1]
-      : newEvents[newEvents.length - 1];
-    setScore({
-      homeScore: latest.homeScore,
-      awayScore: latest.awayScore,
-      minute: latest.minute,
-      status: latest.type === "MATCH_ENDED" ? "finished" : latest.type === "OTHER" ? "scheduled" : "live",
-    });
-
     // Update event list
-    setNormalizedEvents((prev) => [...prev, ...newEvents]);
+    setNormalizedEvents((prev) => {
+      const all = [...prev, ...newEvents];
+      // Update score from latest meaningful event across ALL events
+      const nonOther = all.filter((e) => e.type !== "OTHER").sort((a, b) => b.txlineSequence - a.txlineSequence);
+      const latest = nonOther[0] ?? all[all.length - 1];
+      setScore({
+        homeScore: latest.homeScore,
+        awayScore: latest.awayScore,
+        minute: latest.minute,
+        status: latest.type === "MATCH_ENDED" ? "finished" : latest.type === "OTHER" ? "scheduled" : "live",
+      });
+      return all;
+    });
 
     // Process each new event through the moment engine
     for (const evt of newEvents) {
