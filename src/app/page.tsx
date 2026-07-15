@@ -46,7 +46,6 @@ export default function LandingPage() {
             "TxLINE · live match data",
             "Fan reactions · real-time",
             "Streak challenges · replayable",
-            "Solana · optional sign-in",
           ].map((pill) => (
             <span
               key={pill}
