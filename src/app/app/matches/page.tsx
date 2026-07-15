@@ -56,7 +56,7 @@ function MatchCard({ f }: { f: TxLINEFixture }) {
       <div className="flex items-center justify-center gap-6">
         <TeamWithFlag name={f.homeTeam} className="text-sm font-medium text-text-primary" />
         <span className="text-lg font-bold">
-          {status === "upcoming" ? "vs" : "2 - 1"}
+          {status === "upcoming" ? "vs" : status === "live" ? "2 - 1" : "Replay"}
         </span>
         <TeamWithFlag name={f.awayTeam} className="text-sm font-medium text-text-primary" />
       </div>
@@ -117,7 +117,7 @@ function MatchHub() {
           </p>
         </div>
         <Link
-          href="/app/replay/1"
+          href="/app/replay/18237038"
           className="rounded-lg border border-violet/30 bg-violet/5 px-3 py-1.5 text-[10px] font-medium text-violet transition-all hover:bg-violet/10"
         >
           Demo replay

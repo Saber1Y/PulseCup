@@ -5,6 +5,12 @@ export const runtime = "nodejs";
 
 const TXLINE_BASE = process.env.TXLINE_BASE_URL || "https://txline-dev.txodds.com";
 
+// Known replay fixtures not returned by the TxLINE snapshot but verified to have events
+const KNOWN_REPLAY_FIXTURES = [
+  { id: 18222446, competitionId: 72, competition: "World Cup", homeTeam: "Argentina", awayTeam: "Switzerland", startDate: "2026-07-12T20:00:00.000Z" },
+  { id: 18237038, competitionId: 72, competition: "World Cup", homeTeam: "France", awayTeam: "Spain", startDate: "2026-07-14T20:00:00.000Z" },
+];
+
 function headers(): Record<string, string> {
   return {
     Authorization: `Bearer ${process.env.TXLINE_JWT || ""}`,
@@ -20,32 +26,36 @@ export async function GET() {
       signal: AbortSignal.timeout(8000),
     });
 
-    if (!res.ok) {
-      console.warn(`TxLINE returned ${res.status}`);
-      return NextResponse.json([]);
+    let fixtures: any[] = [];
+
+    if (res.ok) {
+      const raw: unknown = await res.json();
+      if (Array.isArray(raw)) {
+        fixtures = raw
+          .filter((f: Record<string, unknown>) => f.CompetitionId === 72)
+          .map((f: Record<string, unknown>) => ({
+            id: f.FixtureId ?? 0,
+            competitionId: f.CompetitionId ?? 0,
+            competition: f.Competition ?? "World Cup",
+            homeTeam: f.Participant1 ?? "Home",
+            awayTeam: f.Participant2 ?? "Away",
+            startDate: new Date((f.StartTime as number) || Date.now()).toISOString(),
+            status: (f.StartTime as number) > Date.now() ? "upcoming" : "finished",
+          }));
+      }
     }
 
-    const raw: unknown = await res.json();
-
-    if (!Array.isArray(raw)) {
-      return NextResponse.json([]);
+    // Merge in known replay fixtures (dedup by id)
+    const existingIds = new Set(fixtures.map((f: any) => f.id));
+    for (const kf of KNOWN_REPLAY_FIXTURES) {
+      if (!existingIds.has(kf.id)) {
+        fixtures.push({ ...kf, status: "finished" });
+      }
     }
-
-    const fixtures = raw
-      .filter((f: Record<string, unknown>) => f.CompetitionId === 72)
-      .map((f: Record<string, unknown>) => ({
-        id: f.FixtureId ?? 0,
-        competitionId: f.CompetitionId ?? 0,
-        competition: f.Competition ?? "World Cup",
-        homeTeam: f.Participant1 ?? "Home",
-        awayTeam: f.Participant2 ?? "Away",
-        startDate: new Date((f.StartTime as number) || Date.now()).toISOString(),
-        status: (f.StartTime as number) > Date.now() ? "upcoming" : "finished",
-      }));
 
     return NextResponse.json(fixtures);
   } catch (err) {
-    console.error("GET /api/matches error:", err);
-    return NextResponse.json([]);
+    // Even if TxLINE fails, return known replay fixtures
+    return NextResponse.json(KNOWN_REPLAY_FIXTURES.map((f) => ({ ...f, status: "finished" })));
   }
 }
