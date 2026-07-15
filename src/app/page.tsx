@@ -296,49 +296,118 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ===== WORKFLOW DIAGRAM ===== */}
-      <section className="px-4 py-24 md:py-32">
-        <h2 className="mb-12 text-center text-2xl font-bold md:text-3xl">
+      {/* ===== WORKFLOW CANVAS ===== */}
+      <section className="overflow-hidden px-4 py-24 md:py-32">
+        <h2 className="mb-4 text-center text-2xl font-bold md:text-3xl">
           How live match data becomes a fan moment.
         </h2>
-        <div className="relative overflow-x-auto pb-8">
-          <div className="flex min-w-[800px] flex-col gap-8">
-            {/* Main flow */}
-            <div className="flex items-center gap-3">
+        <p className="mx-auto mb-12 max-w-lg text-center text-sm text-text-secondary">
+          Every reaction, challenge, and recap flows through the PulseCup engine.
+        </p>
+
+        <div className="relative mx-auto max-w-5xl overflow-x-auto pb-4">
+          <div className="relative min-w-[940px] rounded-2xl border border-border bg-surface/20 px-10 py-10">
+            {/* Subtle dot-grid canvas background */}
+            <div
+              className="pointer-events-none absolute inset-0 opacity-[0.025]"
+              style={{
+                backgroundImage: "radial-gradient(circle, #FFF7EA 1px, transparent 1px)",
+                backgroundSize: "24px 24px",
+              }}
+            />
+
+            {/* ── Main flow row ── */}
+            <div className="relative flex items-center">
               {[
-                { label: "TxLINE event", tint: "border-mint/30 bg-mint/5", icon: "⌔" },
-                { label: "Normalize event", tint: "border-violet/30 bg-violet/5", icon: "⊞" },
-                { label: "Moment engine", tint: "border-coral/30 bg-coral/5", icon: "✦" },
-                { label: "Fan prompt created", tint: "border-gold/30 bg-gold/5", icon: "◈" },
-                { label: "User responds", tint: "border-coral/30 bg-coral/5", icon: "☰" },
-                { label: "Streak updated", tint: "border-gold/30 bg-gold/5", icon: "★" },
-                { label: "Share recap", tint: "border-violet/30 bg-violet/5", icon: "▣" },
+                { icon: "IoRadioOutline", color: "mint", label: "TxLINE Data", desc: "Live match events" },
+                { icon: "IoSwapHorizontalOutline", color: "violet", label: "Event Normalizer", desc: "Parse + classify" },
+                { icon: "IoFlash", color: "coral", label: "Moment Engine", desc: "Generate prompts" },
+                { icon: "IoPersonOutline", color: "gold", label: "Fan Prompts", desc: "React + challenge" },
+                { icon: "IoTrophyOutline", color: "mint", label: "Streak Engine", desc: "Track answers" },
+                { icon: "IoImageOutline", color: "violet", label: "Recap Card", desc: "Shareable result" },
               ].map((node, i) => (
-                <div key={node.label} className="flex flex-col items-center">
-                  <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border ${node.tint}`}>
-                    <span className="text-sm font-light text-text-secondary" style={{ fontFamily: "sans-serif" }}>{node.icon}</span>
+                <div key={node.label} className="flex shrink-0 items-center">
+                  {/* Node card */}
+                  <div
+                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${
+                      node.color === "mint"
+                        ? "border-mint/15 bg-mint/8"
+                        : node.color === "violet"
+                          ? "border-violet/15 bg-violet/8"
+                          : node.color === "coral"
+                            ? "border-coral/15 bg-coral/8"
+                            : "border-gold/15 bg-gold/8"
+                    }`}
+                  >
+                    {/* Colored icon handle */}
+                    <div
+                      className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+                        node.color === "mint"
+                          ? "bg-mint/15 text-mint"
+                          : node.color === "violet"
+                            ? "bg-violet/15 text-violet"
+                            : node.color === "coral"
+                              ? "bg-coral/15 text-coral"
+                              : "bg-gold/15 text-gold"
+                      }`}
+                    >
+                      <span className="text-base font-light opacity-80">
+                        {node.icon === "IoRadioOutline" && "📡"}
+                        {node.icon === "IoSwapHorizontalOutline" && "🔄"}
+                        {node.icon === "IoFlash" && "⚡"}
+                        {node.icon === "IoPersonOutline" && "👤"}
+                        {node.icon === "IoTrophyOutline" && "🏆"}
+                        {node.icon === "IoImageOutline" && "🖼"}
+                      </span>
+                    </div>
+                    <div>
+                      <div
+                        className={`text-sm font-semibold ${
+                          node.color === "mint"
+                            ? "text-mint"
+                            : node.color === "violet"
+                              ? "text-violet"
+                              : node.color === "coral"
+                                ? "text-coral"
+                                : "text-gold"
+                        }`}
+                      >
+                        {node.label}
+                      </div>
+                      <div className="text-[10px] text-text-secondary/40">{node.desc}</div>
+                    </div>
                   </div>
-                  <span className="mt-2 w-20 text-center text-[10px] leading-tight text-text-secondary">{node.label}</span>
-                  {i < 6 && <div className="mt-2 h-px w-3 bg-border/40" />}
+
+                  {/* Connector */}
+                  {i < 5 && (
+                    <div className="mx-2 flex shrink-0 items-center gap-0.5">
+                      <div className="w-10 border-t-2 border-dashed border-text-secondary/12" />
+                      <span className="text-[10px] text-text-secondary/15">▶</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
-            {/* Lower branch — replay */}
-            <div className="flex items-center gap-3 pl-8">
-              {[
-                { label: "Replay engine", tint: "border-violet/30 bg-violet/5", icon: "↺" },
-              ].map((node) => (
-                <div key={node.label} className="flex flex-col items-center">
-                  <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border ${node.tint}`}>
-                    <span className="text-sm font-light text-text-secondary" style={{ fontFamily: "sans-serif" }}>{node.icon}</span>
+
+            {/* ── Replay branch ── */}
+            <div className="relative mt-8 flex items-center">
+              <div className="flex shrink-0 items-center">
+                <div className="flex items-center gap-3 rounded-2xl border border-violet/15 bg-violet/8 px-4 py-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet/15 text-violet">
+                    <span className="text-base font-light opacity-80">↺</span>
                   </div>
-                  <span className="mt-2 w-20 text-center text-[10px] leading-tight text-text-secondary">{node.label}</span>
+                  <div>
+                    <div className="text-sm font-semibold text-violet">Replay Engine</div>
+                    <div className="text-[10px] text-text-secondary/40">Sequential playback</div>
+                  </div>
                 </div>
-              ))}
-              <div className="flex items-center gap-1 text-[10px] text-text-secondary/60">
-                <span>feeds into</span>
-                <span className="inline-block h-px w-6 bg-border/40" />
-                <span className="text-coral">Normalize event</span>
+              </div>
+              <div className="ml-3 flex items-center gap-2">
+                <div className="w-12 border-t-2 border-dashed border-violet/25" />
+                <span className="text-[10px] text-violet/40">feeds into</span>
+                <span className="rounded-md border border-violet/15 bg-violet/5 px-2 py-0.5 text-[10px] font-medium text-violet/60">
+                  Event Normalizer
+                </span>
               </div>
             </div>
           </div>
