@@ -133,6 +133,7 @@ export default function ReplayPage() {
     }
 
     // Resolve answered challenges
+    const resolvedOutcome: boolean[] = [];
     setChallenges((prev) => {
       let updated = [...prev];
       for (const ch of updated) {
@@ -141,11 +142,14 @@ export default function ReplayPage() {
         if (resolved) {
           const isCorrect = ch.selectedOptionIndex === resolved.correctOptionIndex;
           updated = updated.map((c) => (c.id === resolved.id ? resolved : c));
-          setTimeout(() => handleAnswered(isCorrect), 0);
+          resolvedOutcome.push(isCorrect);
         }
       }
       return updated;
     });
+    for (const correct of resolvedOutcome) {
+      handleAnswered(correct);
+    }
 
     lastEventRef.current = evt;
   }, [eventIdx, allEvents]);
