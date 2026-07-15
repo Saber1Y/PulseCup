@@ -30,10 +30,31 @@ export async function POST(req: Request) {
     }
 
     const supabase = getSupabaseAdmin();
+
+    // Dedup by fixture_id + challenge_type — skip if one already exists
+    const fixtureId = challenges[0]?.fixtureId;
+    const existing = fixtureId
+      ? await supabase
+          .from("challenges")
+          .select("fixture_id, challenge_type")
+          .eq("fixture_id", Number(fixtureId))
+          .in("challenge_type", challenges.map((c) => c.type))
+          .neq("status", "RESOLVED")
+          .then((r) => r.data ?? [])
+      : [];
+    const existingTypes = new Set(existing.map((r: any) => `${r.fixture_id}-${r.challenge_type}`));
+    const toInsert = challenges.filter(
+      (c) => !existingTypes.has(`${c.fixtureId}-${c.type}`),
+    );
+
+    if (toInsert.length === 0) {
+      return NextResponse.json([]);
+    }
+
     const { data, error } = await supabase
       .from("challenges")
       .insert(
-        challenges.map((c) => ({
+        toInsert.map((c) => ({
           id: c.id,
           fixture_id: c.fixtureId,
           challenge_type: c.type,
