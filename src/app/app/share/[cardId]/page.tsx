@@ -20,9 +20,21 @@ export default function ShareCardPage() {
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setCard(data[0]);
+        } else {
+          // Fallback to localStorage
+          try {
+            const stored = localStorage.getItem(`recap-${cardId}`);
+            if (stored) setCard(JSON.parse(stored));
+          } catch {}
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        // Fallback to localStorage
+        try {
+          const stored = localStorage.getItem(`recap-${cardId}`);
+          if (stored) setCard(JSON.parse(stored));
+        } catch {}
+      })
       .finally(() => setLoading(false));
   }, [cardId]);
 

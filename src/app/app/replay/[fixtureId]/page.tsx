@@ -36,10 +36,12 @@ export default function ReplayPage() {
   const [speed, setSpeed] = useState(2);
   const [eventIdx, setEventIdx] = useState(0);
   const [completed, setCompleted] = useState(false);
+  const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const createdChallengeKeys = useRef<Set<string>>(new Set());
   const sessionReactions = useRef<UserReaction[]>([]);
   const lastEventRef = useRef<PulseCupEvent | null>(null);
+  const pendingAutoResume = useRef(false);
 
   useEffect(() => {
     profileId.current = getGuestProfileId();
@@ -88,9 +90,16 @@ export default function ReplayPage() {
     });
   }, [allEvents.length]);
 
+  const openChallenges = challenges.filter((c) => c.status === "OPEN");
+
   // Timer loop
   useEffect(() => {
     if (!playing || completed || allEvents.length === 0) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      return;
+    }
+    // Pause when user has unanswered challenges
+    if (openChallenges.length > 0) {
       if (timerRef.current) clearTimeout(timerRef.current);
       return;
     }
@@ -99,7 +108,7 @@ export default function ReplayPage() {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [playing, eventIdx, speed, completed, advance, allEvents.length]);
+  }, [playing, eventIdx, speed, completed, advance, allEvents.length, openChallenges.length]);
 
   // Process event when index changes
   useEffect(() => {
@@ -129,6 +138,8 @@ export default function ReplayPage() {
           evt,
         );
         setChallenges((prev) => [...prev, ch]);
+        setPlaying(false); // Auto-pause
+        pendingAutoResume.current = true;
       }
     }
 
@@ -179,6 +190,10 @@ export default function ReplayPage() {
       streak: currentStreak,
     });
     setRecapCard(recap);
+    // Save to localStorage so share page works without Supabase
+    try {
+      localStorage.setItem(`recap-${recap.id}`, JSON.stringify(recap));
+    } catch {}
     fetch("/api/recaps", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -217,7 +232,14 @@ export default function ReplayPage() {
   }
 
   const currentEvent = eventIdx >= 0 && eventIdx < allEvents.length ? allEvents[eventIdx] : null;
-  const openChallenges = challenges.filter((c) => c.status === "OPEN");
+
+  // Auto-resume when all open challenges are answered
+  useEffect(() => {
+    if (pendingAutoResume.current && openChallenges.length === 0) {
+      pendingAutoResume.current = false;
+      setPlaying(true);
+    }
+  }, [openChallenges.length]);
 
   const handleAnswered = useCallback((correct: boolean | null) => {
     if (!profileId.current || correct === null) return;
@@ -231,7 +253,9 @@ export default function ReplayPage() {
     setChallenges((prev) =>
       prev.map((c) => (c.id === challengeId ? { ...c, selectedOptionIndex: optionIndex } : c)),
     );
-  }, []);
+    // Advance to resolve the challenge on the next event
+    advance();
+  }, [advance]);
 
   return (
     <div className="flex flex-col gap-4 px-4 pt-4">
@@ -412,12 +436,22 @@ export default function ReplayPage() {
                     </div>
                   </div>
                   <div className="mt-2 text-xs text-gold font-medium">{recapCard.mood}</div>
-                  <Link
-                    href={`/app/share/${recapCard.id}`}
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/app/share/${recapCard.id}`;
+                      if (navigator.share) {
+                        navigator.share({ title: "Match Recap", url }).catch(() => {});
+                      } else {
+                        navigator.clipboard.writeText(url).then(() => {
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
+                        }).catch(() => {});
+                      }
+                    }}
                     className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-coral/15 px-4 py-2 text-xs font-medium text-coral transition-all hover:bg-coral/25"
                   >
-                    Share recap
-                  </Link>
+                    {copied ? "Link copied!" : "Share recap"}
+                  </button>
                 </div>
               )}
 
