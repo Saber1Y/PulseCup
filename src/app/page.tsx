@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { IoRadioOutline, IoSwapHorizontalOutline, IoFlash, IoPersonOutline, IoTrophyOutline, IoImageOutline, IoReloadOutline, IoPlaySharp } from "react-icons/io5";
 
 export default function LandingPage() {
   return (
@@ -350,13 +353,13 @@ export default function LandingPage() {
                               : "bg-gold/15 text-gold"
                       }`}
                     >
-                      <span className="text-base font-light opacity-80">
-                        {node.icon === "IoRadioOutline" && "📡"}
-                        {node.icon === "IoSwapHorizontalOutline" && "🔄"}
-                        {node.icon === "IoFlash" && "⚡"}
-                        {node.icon === "IoPersonOutline" && "👤"}
-                        {node.icon === "IoTrophyOutline" && "🏆"}
-                        {node.icon === "IoImageOutline" && "🖼"}
+                      <span className="text-base opacity-80">
+                        {node.icon === "IoRadioOutline" && <IoRadioOutline className="text-base" />}
+                        {node.icon === "IoSwapHorizontalOutline" && <IoSwapHorizontalOutline className="text-base" />}
+                        {node.icon === "IoFlash" && <IoFlash className="text-base" />}
+                        {node.icon === "IoPersonOutline" && <IoPersonOutline className="text-base" />}
+                        {node.icon === "IoTrophyOutline" && <IoTrophyOutline className="text-base" />}
+                        {node.icon === "IoImageOutline" && <IoImageOutline className="text-base" />}
                       </span>
                     </div>
                     <div>
@@ -381,7 +384,7 @@ export default function LandingPage() {
                   {i < 5 && (
                     <div className="mx-2 flex shrink-0 items-center gap-0.5">
                       <div className="w-10 border-t-2 border-dashed border-text-secondary/12" />
-                      <span className="text-[10px] text-text-secondary/15">▶</span>
+                      <IoPlaySharp className="text-[8px] text-text-secondary/15" />
                     </div>
                   )}
                 </div>
@@ -393,7 +396,7 @@ export default function LandingPage() {
               <div className="flex shrink-0 items-center">
                 <div className="flex items-center gap-3 rounded-2xl border border-violet/15 bg-violet/8 px-4 py-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet/15 text-violet">
-                    <span className="text-base font-light opacity-80">↺</span>
+                    <IoReloadOutline className="text-base opacity-80" />
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-violet">Replay Engine</div>
