@@ -67,8 +67,18 @@ export default function ReplayPage() {
         const normalized = normalizeTxLINEArray(raw).filter(
           (e) => e.type !== "OTHER",
         );
-        if (normalized.length > 0) {
-          setAllEvents(normalized);
+        // TxLINE emits multiple MATCH_ENDED events (regular time, extra time periods).
+        // Keep only the last one so the replay doesn't show "Full time" prematurely.
+        const sorted = [...normalized].sort((a, b) => a.txlineSequence - b.txlineSequence);
+        const lastMatchEnded = sorted
+          .map((e, i) => (e.type === "MATCH_ENDED" ? i : -1))
+          .filter((i) => i >= 0)
+          .pop();
+        const cleaned = sorted.filter(
+          (e, i) => e.type !== "MATCH_ENDED" || i === lastMatchEnded,
+        );
+        if (cleaned.length > 0) {
+          setAllEvents(cleaned);
           setFetchStatus("loaded");
         } else {
           setFetchStatus("empty");
