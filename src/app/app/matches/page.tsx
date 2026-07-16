@@ -62,9 +62,11 @@ function MatchCard({ f }: { f: TxLINEFixture }) {
       </div>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-text-secondary/60">🔥 streak ready</span>
           {status === "live" && (
-            <span className="text-[10px] text-text-secondary/60">· 2 challenges</span>
+            <>
+              <span className="text-[10px] text-text-secondary/60">🔥 streak ready</span>
+              <span className="text-[10px] text-text-secondary/60">· 2 challenges</span>
+            </>
           )}
         </div>
         <span className="text-xs font-medium text-coral">
