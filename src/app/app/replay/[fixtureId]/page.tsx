@@ -100,6 +100,9 @@ export default function ReplayPage() {
     });
   }, [allEvents.length]);
 
+  const pendingChallenges = challenges.filter(
+    (c) => c.status === "OPEN" && c.selectedOptionIndex === undefined,
+  );
   const openChallenges = challenges.filter((c) => c.status === "OPEN");
 
   // Timer loop
@@ -109,7 +112,7 @@ export default function ReplayPage() {
       return;
     }
     // Pause when user has unanswered challenges
-    if (openChallenges.length > 0) {
+    if (pendingChallenges.length > 0) {
       if (timerRef.current) clearTimeout(timerRef.current);
       return;
     }
@@ -118,7 +121,7 @@ export default function ReplayPage() {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [playing, eventIdx, speed, completed, advance, allEvents.length, openChallenges.length]);
+  }, [playing, eventIdx, speed, completed, advance, allEvents.length, pendingChallenges.length]);
 
   // Process event when index changes
   useEffect(() => {
@@ -243,13 +246,13 @@ export default function ReplayPage() {
 
   const currentEvent = eventIdx >= 0 && eventIdx < allEvents.length ? allEvents[eventIdx] : null;
 
-  // Auto-resume when all open challenges are answered
+  // Auto-resume when all pending challenges are answered
   useEffect(() => {
-    if (pendingAutoResume.current && openChallenges.length === 0) {
+    if (pendingAutoResume.current && pendingChallenges.length === 0) {
       pendingAutoResume.current = false;
       setPlaying(true);
     }
-  }, [openChallenges.length]);
+  }, [pendingChallenges.length]);
 
   const handleAnswered = useCallback((correct: boolean | null) => {
     if (!profileId.current || correct === null) return;
@@ -263,9 +266,8 @@ export default function ReplayPage() {
     setChallenges((prev) =>
       prev.map((c) => (c.id === challengeId ? { ...c, selectedOptionIndex: optionIndex } : c)),
     );
-    // Advance to resolve the challenge on the next event
-    advance();
-  }, [advance]);
+    // Auto-resume effect will pick up once this challenge is no longer pending
+  }, []);
 
   return (
     <div className="flex flex-col gap-4 px-4 pt-4">
