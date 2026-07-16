@@ -26,36 +26,54 @@ export async function GET() {
       signal: AbortSignal.timeout(8000),
     });
 
-    let fixtures: any[] = [];
+    const rawFixtures: any[] = [];
 
     if (res.ok) {
       const raw: unknown = await res.json();
       if (Array.isArray(raw)) {
-        fixtures = raw
-          .filter((f: Record<string, unknown>) => f.CompetitionId === 72)
-          .map((f: Record<string, unknown>) => ({
-            id: f.FixtureId ?? 0,
-            competitionId: f.CompetitionId ?? 0,
-            competition: f.Competition ?? "World Cup",
-            homeTeam: f.Participant1 ?? "Home",
-            awayTeam: f.Participant2 ?? "Away",
-            startDate: new Date((f.StartTime as number) || Date.now()).toISOString(),
-            status: (f.StartTime as number) > Date.now() ? "upcoming" : "finished",
-          }));
+        // Only consider World Cup fixtures
+        const wc = raw.filter((f: Record<string, unknown>) => f.CompetitionId === 72);
+
+        // Check which fixtures actually have meaningful event data
+        const results = await Promise.allSettled(
+          wc.map(async (f: Record<string, unknown>) => {
+            const fid = f.FixtureId;
+            const scoreRes = await fetch(
+              `${TXLINE_BASE}/api/scores/snapshot/${fid}`,
+              { headers: headers(), signal: AbortSignal.timeout(5000) },
+            );
+            if (!scoreRes.ok) throw new Error("no data");
+            const events: unknown = await scoreRes.json();
+            const count = Array.isArray(events) ? events.length : 0;
+            if (count <= 2) throw new Error("placeholder");
+            return {
+              id: fid ?? 0,
+              competitionId: f.CompetitionId ?? 0,
+              competition: f.Competition ?? "World Cup",
+              homeTeam: f.Participant1 ?? "Home",
+              awayTeam: f.Participant2 ?? "Away",
+              startDate: new Date((f.StartTime as number) || Date.now()).toISOString(),
+              status: (f.StartTime as number) > Date.now() ? "upcoming" : "finished",
+            };
+          }),
+        );
+
+        for (const r of results) {
+          if (r.status === "fulfilled") rawFixtures.push(r.value);
+        }
       }
     }
 
     // Merge in known replay fixtures (dedup by id)
-    const existingIds = new Set(fixtures.map((f: any) => f.id));
+    const existingIds = new Set(rawFixtures.map((f: any) => f.id));
     for (const kf of KNOWN_REPLAY_FIXTURES) {
       if (!existingIds.has(kf.id)) {
-        fixtures.push({ ...kf, status: "finished" });
+        rawFixtures.push({ ...kf, status: "finished" });
       }
     }
 
-    return NextResponse.json(fixtures);
+    return NextResponse.json(rawFixtures);
   } catch (err) {
-    // Even if TxLINE fails, return known replay fixtures
     return NextResponse.json(KNOWN_REPLAY_FIXTURES.map((f) => ({ ...f, status: "finished" })));
   }
 }
