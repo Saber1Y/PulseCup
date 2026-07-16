@@ -66,7 +66,7 @@ const CHALLENGE_RULES: Array<{
     prompt: (e) =>
       e.type === "GOAL"
         ? "Will there be another goal in the next 10 minutes?"
-        : "Will there be a card in the next 10 minutes?",
+        : "Will there be another card in the next 10 minutes?",
     options: () => ["Yes", "No"],
   },
 ];
