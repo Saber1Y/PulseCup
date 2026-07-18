@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IoFootball, IoRadioOutline, IoReloadOutline, IoPersonOutline } from "react-icons/io5";
+import { IoFootball, IoRadioOutline, IoReloadOutline, IoPersonOutline, IoDocumentTextOutline } from "react-icons/io5";
 
 const tabs = [
   { href: "/app/matches", label: "Matches", icon: IoFootball },
   { href: "/app/matches?tab=live", label: "Live", icon: IoRadioOutline },
   { href: "/app/replay/1", label: "Replay", icon: IoReloadOutline },
   { href: "/app/profile", label: "Profile", icon: IoPersonOutline },
+  { href: "/docs", label: "Docs", icon: IoDocumentTextOutline },
 ];
 
 export default function AppBottomNav() {

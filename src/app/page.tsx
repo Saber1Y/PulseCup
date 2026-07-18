@@ -519,6 +519,7 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-6">
             <a href="#how-it-works" className="text-xs text-text-secondary transition-colors hover:text-text-primary">How it works</a>
+            <Link href="/docs" className="text-xs text-text-secondary transition-colors hover:text-text-primary">Docs</Link>
             <Link href="/app/matches" className="text-xs text-text-secondary transition-colors hover:text-text-primary">Live rooms</Link>
             <Link href="/app/replay/1" className="text-xs text-text-secondary transition-colors hover:text-text-primary">Replay demo</Link>
             <a href="https://github.com/Saber1Y/PulseCup" target="_blank" rel="noopener noreferrer" className="text-xs text-text-secondary transition-colors hover:text-text-primary">GitHub</a>

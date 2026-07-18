@@ -26,6 +26,9 @@ export default function LandingNav() {
           <Link href="/app/replay/1" className="text-sm text-text-secondary transition-colors hover:text-text-primary">
             Replay demo
           </Link>
+          <Link href="/docs" className="text-sm text-text-secondary transition-colors hover:text-text-primary">
+            Docs
+          </Link>
         </div>
 
         <div className="flex items-center gap-3">
